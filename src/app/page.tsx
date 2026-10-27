@@ -135,23 +135,23 @@ export default function DashboardPage() {
       <AppShell>
         <div className="space-y-6 sm:space-y-8">
           {/* Executive Header Banner */}
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#0B132B] via-[#1C2541] to-[#0F172A] text-white p-6 sm:p-8 shadow-xl border border-slate-800">
+          <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-emerald-500/10 via-white to-emerald-500/5 dark:from-[#0B132B] dark:via-[#1C2541] dark:to-[#0F172A] text-slate-900 dark:text-white p-6 sm:p-8 shadow-xs border border-emerald-500/30 dark:border-slate-800">
             <div className="safety-stripe absolute inset-0 opacity-15 pointer-events-none" />
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
                     <Eye className="w-4 h-4" />
                     Chế độ Giám sát Cấp cao • Ban Lãnh đạo
                   </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 text-[11px] font-mono">
+                  <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-mono border border-slate-200 dark:border-slate-700">
                     Được phân quyền: {visibleProjects.length} dự án
                   </span>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                   Bảng Chỉ số Điều hành Dự án • {currentUser.name}
                 </h1>
-                <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-2xl leading-relaxed">
                   Tổng hợp số liệu tiến độ thi công, phân kỳ dòng tiền kinh phí và các trở ngại hiện trường theo thời gian thực.
                 </p>
               </div>
@@ -166,7 +166,7 @@ export default function DashboardPage() {
                 </Link>
                 <Link
                   href="/projects"
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs border border-slate-700 transition-colors flex items-center gap-1.5"
+                  className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white font-semibold text-xs border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1.5 shadow-xs"
                 >
                   <span>Xem {visibleProjects.length} dự án</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -551,21 +551,21 @@ export default function DashboardPage() {
     <AppShell>
       <div className="space-y-6 sm:space-y-8">
         {/* Welcome Executive Banner */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#0B132B] text-white p-6 sm:p-8 shadow-xl border border-slate-800">
-          <div className="safety-stripe absolute inset-0 opacity-20 pointer-events-none" />
+        <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-amber-500/10 via-white to-amber-500/5 dark:from-[#0F172A] dark:via-[#1E293B] dark:to-[#0B132B] text-slate-900 dark:text-white p-6 sm:p-8 shadow-xs border border-amber-500/30 dark:border-slate-800">
+          <div className="safety-stripe absolute inset-0 opacity-15 pointer-events-none" />
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
                   {currentUser.role === 'admin' && <ShieldCheck className="w-3.5 h-3.5" />}
                   {currentUser.role === 'assignee' && <UserCheck className="w-3.5 h-3.5" />}
                   <span>{currentUser.title}</span>
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                 Xin chào, {currentUser.name}!
               </h1>
-              <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-2xl leading-relaxed">
                 {currentUser.role === 'admin' &&
                   'Bảng điều hành dự án của Thầy Trần Quốc Vương: Giao việc cho Thầy Kiệt, xác nhận các đợt nộp tiền kinh phí và thẩm định chất lượng thi công.'}
                 {currentUser.role === 'assignee' &&
@@ -594,7 +594,7 @@ export default function DashboardPage() {
               )}
               <Link
                 href="/projects"
-                className="px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center gap-1.5"
+                className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 dark:bg-slate-800/80 dark:hover:bg-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1.5 shadow-xs"
               >
                 <span>Tất cả kế hoạch</span>
                 <ArrowRight className="w-3.5 h-3.5" />

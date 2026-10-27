@@ -201,7 +201,11 @@ export const useConstructionStore = create<ConstructionStoreState>()(
       },
 
       resetDemoData: () => {
+        if (typeof document !== 'undefined') {
+          document.documentElement.classList.remove('dark');
+        }
         set({
+          theme: 'light',
           currentUser: INITIAL_USERS[0],
           users: INITIAL_USERS,
           projects: INITIAL_PROJECTS,
@@ -979,7 +983,7 @@ export const useConstructionStore = create<ConstructionStoreState>()(
       },
     }),
     {
-      name: 'pxu_taskmaster_store_v6',
+      name: 'pxu_taskmaster_store_v7',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         currentUser: state.currentUser,

@@ -20,7 +20,7 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  var stored = localStorage.getItem('pxu_taskmaster_store_v6') || localStorage.getItem('pxu_taskmaster_store_v5');
+                  var stored = localStorage.getItem('pxu_taskmaster_store_v7');
                   if (stored) {
                     var parsed = JSON.parse(stored);
                     if (parsed && parsed.state && parsed.state.theme === 'dark') {

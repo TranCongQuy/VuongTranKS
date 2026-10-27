@@ -133,3 +133,4 @@ CREATE POLICY "Cho phép chỉnh sửa đợt thanh toán" ON public.payment_mil
 
 CREATE POLICY "Cho phép đọc audit log" ON public.audit_logs FOR SELECT USING (true);
 CREATE POLICY "Cho phép thêm audit log" ON public.audit_logs FOR INSERT WITH CHECK (true);
+

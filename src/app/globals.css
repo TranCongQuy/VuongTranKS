@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --bg-warm: #F8F9FA;
+    --card-warm: #FFFFFF;
+    --sidebar-dark: #0B132B;
+    --sidebar-border: #1C2541;
+    --accent-amber: #F59E0B;
+    --accent-amber-dark: #D97706;
+    --status-success: #10B981;
+    --status-danger: #EF4444;
+    --status-warning: #F59E0B;
+    --status-info: #0284C7;
+  }
+
+  .dark {
+    --bg-warm: #090D16;
+    --card-warm: #111827;
+    --sidebar-dark: #060911;
+    --sidebar-border: #1E293B;
+  }
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Be Vietnam Pro", Arial, sans-serif;
+  background-color: var(--bg-warm);
+  color: #1E293B;
+  transition: background-color 0.25s ease, color 0.25s ease;
+  overflow-x: hidden;
+}
+
+.dark body {
+  color: #F1F5F9;
+  background-color: var(--bg-warm);
+}
+
+/* Custom scrollbar for sleek modern feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.7);
+}
+
+/* Tabular figures for construction measurements and numbers */
+.font-tabular {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Construction safety diagonal stripe subtle pattern */
+.safety-stripe {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(245, 158, 11, 0.08),
+    rgba(245, 158, 11, 0.08) 12px,
+    transparent 12px,
+    transparent 24px
+  );
+}
+
+.safety-stripe-accent {
+  background: repeating-linear-gradient(
+    -45deg,
+    #F59E0B,
+    #F59E0B 10px,
+    #1E293B 10px,
+    #1E293B 20px
+  );
+}
+
+/* Print Styles for PDF Export */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+  }
+
+  .no-print,
+  nav,
+  aside,
+  header,
+  .role-switcher-floating,
+  .quick-cmd-trigger,
+  button,
+  .toast,
+  .lightbox-modal {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-page-break {
+    page-break-before: always;
+  }
+
+  .print-card {
+    border: 1px solid #CBD5E1 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    margin-bottom: 16px;
+    background: #ffffff !important;
+  }
+
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}

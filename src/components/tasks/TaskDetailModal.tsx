@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import {
   Task,
+  TaskStatus,
   TASK_STATUS_CONFIG,
   INCIDENT_SEVERITY_CONFIG,
   INCIDENT_STATUS_CONFIG,
@@ -20,6 +21,10 @@ import {
 } from 'lucide-react';
 import { formatDateVN, formatDateTimeVN, getRelativeDueLabel } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Modal } from '@/components/ui/Modal';
+import { ProgressBar } from '@/components/ui/cards';
+import { StatusBadge, type BadgeTone } from '@/components/ui/StatusBadge';
+import { IconBtn } from '@/components/ui/RowMenu';
 
 interface TaskDetailModalProps {
   task: Task | null;
@@ -27,6 +32,20 @@ interface TaskDetailModalProps {
   onOpenApproval?: (task: Task) => void;
   onOpenUpdate?: (task: Task) => void;
 }
+
+const STATUS_TONE: Record<TaskStatus, BadgeTone> = {
+  todo: 'slate',
+  in_progress: 'gold',
+  submitted: 'violet',
+  approved: 'pine',
+  returned: 'rose',
+};
+
+const severityTone = (severity: string): BadgeTone =>
+  severity === 'critical' || severity === 'high' ? 'rose' : severity === 'medium' ? 'gold' : 'slate';
+
+const incidentStatusTone = (status: string): BadgeTone =>
+  status === 'resolved' ? 'pine' : status === 'resolving' ? 'gold' : 'rose';
 
 export function TaskDetailModal({
   task,
@@ -53,69 +72,87 @@ export function TaskDetailModal({
   const isApproved = task.status === 'approved';
   const dueInfo = getRelativeDueLabel(task.dueDate, isApproved);
 
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Chi tiết nhiệm vụ thi công"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150"
-    >
-      <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span
-                className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${TASK_STATUS_CONFIG[task.status].badgeClass}`}
-              >
-                {TASK_STATUS_CONFIG[task.status].label}
-              </span>
-              <span className="text-xs text-slate-400 font-mono">
-                {project?.code} • {project?.name}
-              </span>
-            </div>
-            <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
-              {task.title}
-            </h3>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Đóng chi tiết nhiệm vụ"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+  // Primary action theo trạng thái hiện tại (tối đa 1 nút primary ở footer)
+  const primaryAction =
+    currentUser.role === 'admin' && task.status === 'submitted'
+      ? {
+          label: 'Kiểm tra & Nghiệm thu',
+          icon: <ShieldCheck className="w-4 h-4" />,
+          onClick: () => {
+            onClose();
+            onOpenApproval?.(task);
+          },
+        }
+      : currentUser.role === 'assignee' && task.assigneeId === currentUser.id && task.status !== 'approved'
+        ? {
+            label: 'Báo cáo tiến độ mới',
+            icon: <Edit3 className="w-4 h-4" />,
+            onClick: () => {
+              onClose();
+              onOpenUpdate?.(task);
+            },
+          }
+        : null;
 
-        {/* Body */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+  const footer = (
+    <>
+      <button type="button" onClick={onClose} className="btn-ghost">
+        Đóng
+      </button>
+      {primaryAction && (
+        <button type="button" onClick={primaryAction.onClick} className="btn-primary">
+          {primaryAction.icon}
+          {primaryAction.label}
+        </button>
+      )}
+    </>
+  );
+
+  return (
+    <>
+      <Modal
+        open
+        onClose={onClose}
+        title={task.title}
+        subtitle={`${project?.code} • ${project?.name}`}
+        footer={footer}
+        size="lg"
+      >
+        <div className="space-y-6 text-[13px]">
+          <div>
+            <StatusBadge tone={STATUS_TONE[task.status]} dot>
+              {TASK_STATUS_CONFIG[task.status].label}
+            </StatusBadge>
+          </div>
+
           {/* Status info bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-2xl bg-cream dark:bg-night-line/40 border border-line dark:border-night-line">
             <div>
-              <span className="text-[10px] text-slate-400 uppercase font-semibold">Tiến độ</span>
-              <div className="font-tabular font-black text-lg text-amber-500">
+              <span className="lbl">Tiến độ</span>
+              <div className="font-tabular font-black text-lg text-pine-700 dark:text-pine-500">
                 {task.progress}%
               </div>
+              <ProgressBar value={task.progress} tone="pine" h="h-1.5" className="mt-1.5" />
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 uppercase font-semibold">Hạn chót</span>
-              <div className="font-bold text-slate-800 dark:text-slate-200 mt-0.5">
+              <span className="lbl">Hạn chót</span>
+              <div className="font-bold text-ink dark:text-slate-200">
                 {formatDateVN(task.dueDate)}
               </div>
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 uppercase font-semibold">Tình trạng</span>
-              <div className="mt-0.5">
+              <span className="lbl">Tình trạng</span>
+              <div>
                 {dueInfo.isOverdue ? (
-                  <span className="text-rose-600 font-bold">{dueInfo.label}</span>
+                  <span className="text-rose-600 dark:text-rose-400 font-bold">{dueInfo.label}</span>
                 ) : (
-                  <span className="text-slate-600 dark:text-slate-300">{dueInfo.label}</span>
+                  <span className="text-ink-soft dark:text-slate-300">{dueInfo.label}</span>
                 )}
               </div>
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 uppercase font-semibold">Người làm</span>
-              <div className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">
+              <span className="lbl">Người làm</span>
+              <div className="font-bold text-ink dark:text-slate-200 truncate">
                 {assignee?.name}
               </div>
             </div>
@@ -123,10 +160,8 @@ export function TaskDetailModal({
 
           {/* Description */}
           <div>
-            <h4 className="font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-              Mục tiêu & Yêu cầu thực hiện
-            </h4>
-            <p className="text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800/20 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800">
+            <h4 className="lbl">Mục tiêu &amp; Yêu cầu thực hiện</h4>
+            <p className="text-ink-soft dark:text-slate-300 leading-relaxed bg-cream dark:bg-night-line/30 p-4 rounded-2xl border border-line dark:border-night-line">
               {task.description}
             </p>
           </div>
@@ -135,32 +170,32 @@ export function TaskDetailModal({
           {task.subtasks && task.subtasks.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h4 className="font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                  <CheckSquare className="w-3.5 h-3.5 text-amber-500" />
+                <h4 className="lbl flex items-center gap-1.5 mb-0">
+                  <CheckSquare className="w-3.5 h-3.5 text-gold-600 dark:text-gold-400" />
                   Danh mục mục tiêu con (Subtasks)
                 </h4>
-                <span className="text-[11px] font-mono font-semibold text-slate-500">
+                <span className="text-[11px] font-tabular font-semibold text-ink-soft dark:text-slate-400">
                   {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length} hoàn thành
                 </span>
               </div>
-              <div className="space-y-1.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 p-3 border border-slate-200 dark:border-slate-800">
+              <div className="rounded-2xl bg-cream dark:bg-night-line/30 p-2 border border-line dark:border-night-line divide-y divide-line/70 dark:divide-night-line/70">
                 {task.subtasks.map((st) => (
                   <label
                     key={st.id}
-                    className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                    className="flex items-center gap-2.5 px-2 py-2.5 rounded-xl hover:bg-parchment dark:hover:bg-night-card transition-colors cursor-pointer"
                   >
                     <input
                       type="checkbox"
                       checked={st.completed}
                       disabled={task.status === 'approved' || currentUser.role === 'leader'}
                       onChange={() => toggleSubtask(task.id, st.id)}
-                      className="rounded border-slate-300 text-amber-500 focus:ring-amber-500"
+                      className="rounded border-slate-300 accent-pine-600 w-4 h-4"
                     />
                     <span
-                      className={`text-xs ${
+                      className={`text-[13px] ${
                         st.completed
-                          ? 'line-through text-slate-400 dark:text-slate-500'
-                          : 'text-slate-700 dark:text-slate-200 font-medium'
+                          ? 'line-through text-ink-soft/70 dark:text-slate-500'
+                          : 'text-ink dark:text-slate-200 font-medium'
                       }`}
                     >
                       {st.title}
@@ -174,12 +209,10 @@ export function TaskDetailModal({
           {/* Incidents Section */}
           {task.incidents && task.incidents.length > 0 && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="font-bold uppercase tracking-wider text-rose-500 flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  Mục phát sinh & Trở ngại hiện trường ({task.incidents.length})
-                </h4>
-              </div>
+              <h4 className="lbl text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                Mục phát sinh &amp; Trở ngại hiện trường ({task.incidents.length})
+              </h4>
 
               <div className="space-y-2.5">
                 {task.incidents.map((inc) => {
@@ -189,36 +222,32 @@ export function TaskDetailModal({
                   return (
                     <div
                       key={inc.id}
-                      className="p-3.5 rounded-2xl bg-amber-500/5 dark:bg-slate-800/60 border border-amber-500/30 space-y-2"
+                      className="p-4 rounded-2xl bg-gold-100/40 dark:bg-night-line/30 border border-gold-500/25 space-y-2"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-1.5">
-                        <span className="font-bold text-slate-900 dark:text-slate-100 text-xs">
+                        <span className="font-bold text-ink dark:text-white text-[13px]">
                           {inc.title}
                         </span>
                         <div className="flex items-center gap-1.5">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${severityConfig.badge}`}>
-                            {severityConfig.label}
-                          </span>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${statusConfig.badge}`}>
-                            {statusConfig.label}
-                          </span>
+                          <StatusBadge tone={severityTone(inc.severity)}>{severityConfig.label}</StatusBadge>
+                          <StatusBadge tone={incidentStatusTone(inc.status)}>{statusConfig.label}</StatusBadge>
                         </div>
                       </div>
 
-                      <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-[11px]">
+                      <p className="text-ink-soft dark:text-slate-300 leading-relaxed text-xs">
                         {inc.description}
                       </p>
 
                       {inc.solution && (
-                        <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-[11px] text-emerald-800 dark:text-emerald-300">
-                          <strong className="block text-slate-700 dark:text-slate-300 mb-0.5 font-semibold">
+                        <div className="p-3 rounded-xl bg-parchment dark:bg-night-card border border-line dark:border-night-line text-xs text-pine-700 dark:text-pine-500">
+                          <strong className="block text-ink dark:text-slate-300 mb-0.5 font-semibold">
                             Phương án xử lý:
                           </strong>
                           {inc.solution}
                         </div>
                       )}
 
-                      <div className="flex items-center justify-between pt-1 text-[10px] text-slate-400">
+                      <div className="flex items-center justify-between pt-1 text-[10px] text-ink-soft dark:text-slate-400 gap-2">
                         <span>Báo bởi: {inc.reportedBy} ({formatDateTimeVN(inc.reportedAt)})</span>
 
                         {currentUser.role !== 'leader' && inc.status !== 'resolved' && (
@@ -228,7 +257,7 @@ export function TaskDetailModal({
                               updateIncidentStatus(task.id, inc.id, 'resolved', 'Đã xử lý khắc phục hoàn tất.');
                               toast.success('Đã cập nhật mục phát sinh thành: Đã xử lý xong');
                             }}
-                            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] transition-colors"
+                            className="btn-quiet text-pine-700 dark:text-pine-500 font-bold shrink-0"
                           >
                             Đánh dấu đã giải quyết
                           </button>
@@ -243,7 +272,7 @@ export function TaskDetailModal({
 
           {/* Return Reason Warning */}
           {task.status === 'returned' && task.returnReason && (
-            <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800">
+            <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30">
               <span className="font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5 mb-1">
                 <AlertTriangle className="w-4 h-4" />
                 Lý do hoàn trả yêu cầu hoàn thiện:
@@ -255,16 +284,16 @@ export function TaskDetailModal({
           {/* Attachments & Videos */}
           {taskAttachments.length > 0 && (
             <div>
-              <h4 className="font-bold uppercase tracking-wider text-slate-500 mb-2.5 flex items-center gap-1.5">
-                <Film className="w-3.5 h-3.5 text-amber-500" />
-                Hình ảnh & Video minh chứng hiện trường ({taskAttachments.length})
+              <h4 className="lbl flex items-center gap-1.5">
+                <Film className="w-3.5 h-3.5 text-gold-600 dark:text-gold-400" />
+                Hình ảnh &amp; Video minh chứng hiện trường ({taskAttachments.length})
               </h4>
               <div className="grid grid-cols-2 gap-3">
                 {taskAttachments.map((att) => (
                   <div
                     key={att.id}
                     onClick={() => setSelectedMedia(att.url)}
-                    className="group relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 cursor-pointer shadow-xs hover:shadow-md transition-all"
+                    className="group relative rounded-[20px] overflow-hidden border border-line dark:border-night-line bg-navy-950 cursor-pointer hover:shadow-md transition-all"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -274,17 +303,17 @@ export function TaskDetailModal({
                     />
                     <div className="absolute top-2 left-2 flex items-center gap-1">
                       {att.type === 'video' ? (
-                        <span className="px-2 py-0.5 rounded-lg bg-black/70 backdrop-blur-md text-amber-400 text-[10px] font-bold font-mono flex items-center gap-1 border border-amber-400/30">
+                        <span className="px-2 py-0.5 rounded-lg bg-black/70 backdrop-blur-md text-gold-400 text-[10px] font-bold font-tabular flex items-center gap-1 border border-gold-500/30">
                           <Film className="w-3 h-3" />
                           {att.duration ? `${Math.floor(att.duration / 60)}:${(att.duration % 60).toString().padStart(2, '0')}` : 'Video'}
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded-lg bg-black/70 backdrop-blur-md text-sky-400 text-[10px] font-bold font-mono flex items-center gap-1 border border-white/20">
+                        <span className="px-2 py-0.5 rounded-lg bg-black/70 backdrop-blur-md text-sky-400 text-[10px] font-bold font-tabular flex items-center gap-1 border border-white/20">
                           <ImageIcon className="w-3 h-3" /> Ảnh
                         </span>
                       )}
                     </div>
-                    <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/90 to-transparent text-white">
+                    <div className="absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black/90 to-transparent text-white">
                       <p className="text-xs font-semibold truncate">{att.name}</p>
                       {att.caption && (
                         <p className="text-[10px] text-slate-300 line-clamp-1">{att.caption}</p>
@@ -298,102 +327,58 @@ export function TaskDetailModal({
 
           {/* Update History Log */}
           <div>
-            <h4 className="font-bold uppercase tracking-wider text-slate-500 mb-3">
-              Lịch sử báo cáo & Minh chứng kết quả ({updates.length})
+            <h4 className="lbl">
+              Lịch sử báo cáo &amp; Minh chứng kết quả ({updates.length})
             </h4>
 
             {updates.length === 0 ? (
-              <p className="text-slate-400 italic">Chưa có nhật ký báo cáo nào được ghi lại.</p>
+              <p className="text-ink-soft dark:text-slate-400 italic">Chưa có nhật ký báo cáo nào được ghi lại.</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {updates.map((upd) => (
                   <div
                     key={upd.id}
-                    className="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                    className="p-4 rounded-2xl bg-parchment dark:bg-night-card border border-line dark:border-night-line"
                   >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                        <FileText className="w-3.5 h-3.5 text-amber-500" />
+                    <div className="flex items-center justify-between mb-1.5 gap-2">
+                      <span className="font-bold text-ink dark:text-slate-200 flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5 text-gold-600 dark:text-gold-400" />
                         Cập nhật đạt {upd.progress}%
                       </span>
-                      <span className="font-mono text-[10px] text-slate-400">
+                      <span className="font-tabular text-[10px] text-ink-soft dark:text-slate-400">
                         {formatDateTimeVN(upd.createdAt)}
                       </span>
                     </div>
-                    <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{upd.note}</p>
+                    <p className="text-ink-soft dark:text-slate-300 leading-relaxed">{upd.note}</p>
                   </div>
                 ))}
               </div>
             )}
           </div>
         </div>
+      </Modal>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 text-xs"
-          >
-            Đóng
-          </button>
-
-          <div className="flex items-center gap-2">
-            {currentUser.role === 'admin' && task.status === 'submitted' && (
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onOpenApproval?.(task);
-                }}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-600/20"
-              >
-                <ShieldCheck className="w-4 h-4" />
-                Kiểm tra & Nghiệm thu
-              </button>
-            )}
-
-            {currentUser.role === 'assignee' &&
-              task.assigneeId === currentUser.id &&
-              task.status !== 'approved' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    onOpenUpdate?.(task);
-                  }}
-                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20"
-                >
-                  <Edit3 className="w-4 h-4" />
-                  Báo cáo tiến độ mới
-                </button>
-              )}
+      {/* Lightbox Preview — logic giữ nguyên, nút đóng = IconBtn */}
+      {selectedMedia && (
+        <div
+          onClick={() => setSelectedMedia(null)}
+          className="fixed inset-0 z-[80] bg-navy-950/85 flex items-center justify-center p-4 animate-in fade-in"
+        >
+          <div className="relative max-w-2xl w-full bg-navy-950 rounded-[20px] overflow-hidden p-2">
+            <div className="absolute top-4 right-4 z-10 [&_button]:bg-black/60 [&_button]:text-white [&_button]:hover:bg-black/80 [&_button]:hover:text-white [&_button]:rounded-full">
+              <IconBtn label="Đóng xem ảnh" onClick={() => setSelectedMedia(null)}>
+                <X className="w-5 h-5" />
+              </IconBtn>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={selectedMedia}
+              alt="Minh chứng"
+              className="w-full max-h-[75vh] object-contain rounded-2xl"
+            />
           </div>
         </div>
-        {/* Lightbox Preview */}
-        {selectedMedia && (
-          <div
-            onClick={() => setSelectedMedia(null)}
-            className="fixed inset-0 z-60 bg-black/80 flex items-center justify-center p-4 animate-in fade-in"
-          >
-            <div className="relative max-w-2xl w-full bg-slate-900 rounded-2xl overflow-hidden p-2">
-              <button
-                onClick={() => setSelectedMedia(null)}
-                className="absolute top-4 right-4 p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors z-10"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={selectedMedia}
-                alt="Minh chứng"
-                className="w-full max-h-[75vh] object-contain rounded-xl"
-              />
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+      )}
+    </>
   );
 }
-

@@ -1,7 +1,15 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { Be_Vietnam_Pro } from 'next/font/google';
 import './globals.css';
 import { AppProvider } from '@/components/providers/AppProvider';
+
+const beVietnamPro = Be_Vietnam_Pro({
+  subsets: ['vietnamese', 'latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  variable: '--font-bvp',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Quản lý Dự án PXU | Giao việc, Giám sát & Báo cáo Công trình',
@@ -40,7 +48,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="antialiased min-h-screen bg-[#F8F9FA] dark:bg-[#090D16]">
+      <body className={`${beVietnamPro.variable} antialiased min-h-screen bg-cream dark:bg-night`}>
         <Suspense
           fallback={
             <div className="min-h-screen flex items-center justify-center">

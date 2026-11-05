@@ -25,9 +25,14 @@ import {
   CreditCard,
   Receipt,
   Camera,
-  MessageSquare,
+  Users,
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
+import { SectionCard, StatCard, ProgressBar, Avatar, EmptyState } from '@/components/ui/cards';
+import { StatusBadge, type BadgeTone } from '@/components/ui/StatusBadge';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { RowMenu, IconBtn } from '@/components/ui/RowMenu';
+import { Switch } from '@/components/ui/Switch';
 import { TaskKanbanView } from '@/components/projects/TaskKanbanView';
 import { TaskListView } from '@/components/projects/TaskListView';
 import { TaskTimelineView } from '@/components/projects/TaskTimelineView';
@@ -54,6 +59,12 @@ import { toast } from 'sonner';
 
 // 7 PRM tabs
 type ProjectTab = 'overview' | 'tasks' | 'media' | 'incidents' | 'financial' | 'chat' | 'access';
+
+const PROJECT_STATUS_META: Record<string, { label: string; tone: BadgeTone }> = {
+  active: { label: 'Đang triển khai', tone: 'pine' },
+  completed: { label: 'Đã hoàn thành', tone: 'navy' },
+  paused: { label: 'Tạm dừng', tone: 'gold' },
+};
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -140,25 +151,17 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   if (!project || !hasAccess) {
     return (
       <AppShell>
-        <div className="py-20 flex flex-col items-center justify-center text-center px-4 max-w-lg mx-auto">
-          <div className="w-16 h-16 rounded-3xl bg-rose-500/10 text-rose-500 border border-rose-500/30 flex items-center justify-center mb-4">
-            <Lock className="w-8 h-8" />
-          </div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-            Bạn không có quyền xem gói thầu này
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-            Tài khoản hiện tại ({currentUser.name} - {currentUser.title}) chưa được cấp quyền truy cập hồ sơ gói thầu này.
-          </p>
-          <div className="mt-6 flex items-center gap-3">
-            <Link
-              href="/projects"
-              className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 flex items-center gap-2"
-            >
+        <div className="card max-w-lg mx-auto mt-10">
+          <EmptyState
+            icon={<Lock className="w-7 h-7 text-rose-500" />}
+            title="Bạn không có quyền xem gói thầu này"
+            description={`Tài khoản hiện tại (${currentUser.name} - ${currentUser.title}) chưa được cấp quyền truy cập hồ sơ gói thầu này.`}
+          >
+            <Link href="/projects" className="btn-primary">
               <ArrowLeft className="w-4 h-4" />
               Về danh sách gói thầu
             </Link>
-          </div>
+          </EmptyState>
         </div>
       </AppShell>
     );
@@ -262,127 +265,118 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     <AppShell>
       <div className="space-y-6">
         {/* ========================================================= */}
-        {/* EXECUTIVE PRM HEADER - TỔNG QUAN TINH GỌN, SẠCH SẼ        */}
+        {/* HERO — tổng quan gọn trong 1 card                          */}
         {/* ========================================================= */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="flex items-start gap-3.5">
-              <Link
-                href="/projects"
-                title="Quay lại danh sách gói thầu"
-                className="mt-1 p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
+        <div className="card p-5 sm:p-6 space-y-5">
+          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
+            <div className="flex items-start gap-3 min-w-0">
+              <Link href="/projects" className="mt-0.5 shrink-0">
+                <IconBtn label="Quay lại danh sách gói thầu">
+                  <ArrowLeft className="w-4.5 h-4.5" />
+                </IconBtn>
               </Link>
 
-              <div>
-                {/* Meta Badges */}
-                <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                  <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
-                    {project.code}
-                  </span>
-                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-lg bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <span className="eyebrow">{project.code}</span>
+                  {/* Hành động chính theo vai trò — tối đa 1 nút primary cho cả trang.
+                      File này không có sửa/xoá dự án trong logic hiện tại nên không thêm RowMenu bịa. */}
+                  {isAssignee && inProgressTask && (
+                    <button onClick={() => setUpdateTask(inProgressTask)} className="btn-primary">
+                      <Camera className="w-4 h-4 stroke-[2.5]" />
+                      <span>+ Báo cáo hiện trường</span>
+                    </button>
+                  )}
+                  {isAdmin && (
+                    <Link href={`/tasks/new?projectId=${project.id}`} className="btn-primary">
+                      <PlusCircle className="w-4 h-4 stroke-[2.5]" />
+                      <span>+ Giao mục tiêu mới</span>
+                    </Link>
+                  )}
+                  {isLeader && (
+                    <button onClick={() => setActiveTab('overview')} className="btn-ghost">
+                      <Sparkles className="w-4 h-4" />
+                      <span>Gửi chỉ đạo Lãnh đạo</span>
+                    </button>
+                  )}
+                </div>
+
+                <h1 className="text-[22px] sm:text-[26px] font-extrabold text-ink dark:text-white tracking-tight leading-snug mt-1.5">
+                  {project.name}
+                </h1>
+
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-ink-soft dark:text-slate-400 mt-2.5 font-medium">
+                  <StatusBadge tone={(PROJECT_STATUS_META[project.status] || PROJECT_STATUS_META.active).tone} dot>
+                    {(PROJECT_STATUS_META[project.status] || PROJECT_STATUS_META.active).label}
+                  </StatusBadge>
+                  <StatusBadge tone="sky">
                     {project.campus === 'tranphu' ? '176 Trần Phú' : 'Cơ sở 2 - An Tây'}
-                  </span>
-                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                    Bước {currentStepNum}: {currentStepObj.shortName}
-                  </span>
+                  </StatusBadge>
                   {catConfig && (
                     <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border ${catConfig.badge}`}>
                       {catConfig.label}
                     </span>
                   )}
-                </div>
-
-                <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">
-                  {project.name}
-                </h1>
-
-                <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium">
                   <span className="flex items-center gap-1.5">
-                    <Briefcase className="w-3.5 h-3.5 text-amber-500" />
-                    Đơn vị thi công: <strong className="text-slate-800 dark:text-slate-200">{project.contractor || project.organization}</strong>
+                    <Briefcase className="w-3.5 h-3.5 text-gold-600" />
+                    Đơn vị thi công: <strong className="text-ink dark:text-slate-200">{project.contractor || project.organization}</strong>
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-amber-500" />
+                    <MapPin className="w-3.5 h-3.5 text-gold-600" />
                     {project.location}
                   </span>
                   <span className="flex items-center gap-1.5 font-mono">
-                    <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                    <Calendar className="w-3.5 h-3.5 text-gold-600" />
                     {formatDateVN(project.startDate)} → {formatDateVN(project.endDate)}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-gold-600" />
+                    Lãnh đạo giám sát:{' '}
+                    <strong className="text-ink dark:text-slate-200">
+                      {projectLeaderNames.length > 0 ? projectLeaderNames.join(', ') : 'Chưa cấp quyền'}
+                    </strong>
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Role-Based Primary Action Button */}
-            <div className="flex items-center gap-2.5 shrink-0 self-start lg:self-center">
-              {/* Thầy Kiệt (Assignee): Quick Report button */}
-              {isAssignee && inProgressTask && (
-                <button
-                  onClick={() => setUpdateTask(inProgressTask)}
-                  className="px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2 cursor-pointer"
-                >
-                  <Camera className="w-4 h-4 stroke-[2.5]" />
-                  <span>+ Báo cáo hiện trường</span>
-                </button>
-              )}
-
-              {/* Thầy Vương (Admin): New Task */}
-              {isAdmin && (
-                <Link
-                  href={`/tasks/new?projectId=${project.id}`}
-                  className="px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
-                >
-                  <PlusCircle className="w-4 h-4 stroke-[2.5]" />
-                  <span>+ Giao mục tiêu mới</span>
-                </Link>
-              )}
-
-              {/* Lãnh đạo (Leader): Fast Directive Button */}
-              {isLeader && (
-                <button
-                  onClick={() => setActiveTab('overview')}
-                  className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>Gửi chỉ đạo Lãnh đạo</span>
-                </button>
-              )}
+            {/* Tiến độ thật — số % lớn + thanh pine + bước workflow hiện tại */}
+            <div className="shrink-0 lg:w-56 lg:border-l lg:border-line lg:dark:border-night-line lg:pl-5">
+              <div className="flex items-baseline gap-2">
+                <span className="font-tabular text-[40px] leading-none font-extrabold text-ink dark:text-white">
+                  {progress}
+                </span>
+                <span className="font-tabular text-lg font-bold text-ink-soft dark:text-slate-400">%</span>
+                <span className="text-[11px] text-ink-soft dark:text-slate-400 font-medium">
+                  {projectTasks.filter((t) => t.status === 'approved').length}/{projectTasks.length} nhiệm vụ
+                </span>
+              </div>
+              <ProgressBar value={progress} tone="pine" className="mt-2.5" />
+              <p className="text-xs font-semibold text-pine-700 dark:text-pine-500 mt-2">
+                Đang ở Bước {currentStepNum}: {currentStepObj.shortName}
+              </p>
             </div>
           </div>
 
-          {/* Golden Metrics Summary Strip (Dành cho Lãnh đạo nhìn nhanh con số) */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
-            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60">
-              <span className="text-[10px] text-slate-400 uppercase font-semibold block">Tiến độ tổng thể</span>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className={`font-mono text-base font-black ${progress === 100 ? 'text-emerald-600' : 'text-amber-500'}`}>
-                  {progress}%
-                </span>
-                <span className="text-[11px] text-slate-500 font-normal">
-                  ({projectTasks.filter((t) => t.status === 'approved').length}/{projectTasks.length} nhiệm vụ)
-                </span>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60">
-              <span className="text-[10px] text-slate-400 uppercase font-semibold block">Kinh phí dự toán</span>
-              <div className="font-mono text-base font-black text-slate-900 dark:text-white mt-0.5">
+          {/* Dải số liệu tài chính tóm tắt (tiến độ đã chuyển lên khối % bên phải) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-line dark:border-night-line text-xs">
+            <div className="p-3 rounded-2xl bg-parchment dark:bg-night-line/40 border border-line dark:border-night-line">
+              <span className="text-[10px] text-ink-soft dark:text-slate-400 uppercase font-semibold block">Kinh phí dự toán</span>
+              <div className="font-mono text-base font-black text-ink dark:text-white mt-0.5">
                 {formatCurrencyVN(totalBudget)}
               </div>
             </div>
 
-            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60">
-              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 uppercase font-semibold block">Đã thanh toán</span>
-              <div className="font-mono text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+            <div className="p-3 rounded-2xl bg-parchment dark:bg-night-line/40 border border-line dark:border-night-line">
+              <span className="text-[10px] text-pine-600 dark:text-pine-500 uppercase font-semibold block">Đã thanh toán</span>
+              <div className="font-mono text-base font-black text-pine-600 dark:text-pine-500 mt-0.5">
                 {formatCurrencyVN(paidAmount)} ({paidPercent}%)
               </div>
             </div>
 
-            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60">
-              <span className="text-[10px] text-amber-600 dark:text-amber-400 uppercase font-semibold block">Còn lại cần nộp</span>
-              <div className="font-mono text-base font-black text-amber-600 dark:text-amber-400 mt-0.5">
+            <div className="p-3 rounded-2xl bg-parchment dark:bg-night-line/40 border border-line dark:border-night-line">
+              <span className="text-[10px] text-gold-600 dark:text-gold-400 uppercase font-semibold block">Còn lại cần nộp</span>
+              <div className="font-mono text-base font-black text-gold-600 dark:text-gold-400 mt-0.5">
                 {formatCurrencyVN(remainingAmount)}
               </div>
             </div>
@@ -390,62 +384,50 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         </div>
 
         {/* ========================================================= */}
-        {/* 7 PRM TABS NAVIGATION — cuộn ngang trên mobile           */}
+        {/* 7 PRM TABS — SegmentedControl variant="tabs"              */}
         {/* ========================================================= */}
-        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 overflow-x-auto whitespace-nowrap">
-          {(
-            [
-              { id: 'overview', label: 'Tổng quan' },
-              { id: 'tasks', label: `Công việc (${projectTasks.length})` },
-              { id: 'media', label: 'Báo cáo & Minh chứng' },
-              { id: 'incidents', label: `Sự cố (${projectIncidents.length})` },
-              { id: 'financial', label: `Dòng tiền (${paidPercent}% nộp)` },
-              { id: 'chat', label: 'Trao đổi' },
-              ...(isAdmin ? [{ id: 'access', label: 'Phân quyền' }] : []),
-            ] as { id: ProjectTab; label: string }[]
-          ).map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-3 rounded-t-2xl font-bold text-xs sm:text-sm transition-all border-b-2 shrink-0 ${
-                activeTab === tab.id
-                  ? 'border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-500/10'
-                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl<ProjectTab>
+          variant="tabs"
+          value={activeTab}
+          onChange={(v) => setActiveTab(v)}
+          options={[
+            { value: 'overview', label: 'Tổng quan' },
+            { value: 'tasks', label: 'Công việc', count: projectTasks.length },
+            { value: 'media', label: 'Báo cáo & Minh chứng' },
+            { value: 'incidents', label: 'Sự cố', count: projectIncidents.length },
+            { value: 'financial', label: `Dòng tiền (${paidPercent}% nộp)` },
+            { value: 'chat', label: 'Trao đổi' },
+            ...(isAdmin ? [{ value: 'access' as ProjectTab, label: 'Phân quyền' }] : []),
+          ]}
+        />
 
         {/* TAB: TỔNG QUAN */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
             {/* Mô tả & thông tin hợp đồng / thành viên tóm tắt */}
-            <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-              <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">Tổng quan gói thầu</h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+            <SectionCard title="Tổng quan gói thầu">
+              <p className="text-xs sm:text-sm text-ink-soft dark:text-slate-300 leading-relaxed">
                 {project.description}
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <span>Đơn vị tổ chức: <strong className="text-slate-800 dark:text-slate-200">{project.organization}</strong></span>
-                <span>Nhà thầu: <strong className="text-slate-800 dark:text-slate-200">{project.contractor || 'Chưa chọn nhà thầu'}</strong></span>
-                <span>Địa điểm: <strong className="text-slate-800 dark:text-slate-200">{project.location}</strong></span>
-                <span>Kinh phí: <strong className="text-slate-800 dark:text-slate-200">{project.budget}</strong></span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-ink-soft dark:text-slate-400 pt-3 mt-3 border-t border-line dark:border-night-line">
+                <span>Đơn vị tổ chức: <strong className="text-ink dark:text-slate-200">{project.organization}</strong></span>
+                <span>Nhà thầu: <strong className="text-ink dark:text-slate-200">{project.contractor || 'Chưa chọn nhà thầu'}</strong></span>
+                <span>Địa điểm: <strong className="text-ink dark:text-slate-200">{project.location}</strong></span>
+                <span>Kinh phí: <strong className="text-ink dark:text-slate-200">{project.budget}</strong></span>
                 <span>
                   Lãnh đạo theo dõi:{' '}
-                  <strong className="text-slate-800 dark:text-slate-200">
+                  <strong className="text-ink dark:text-slate-200">
                     {projectLeaderNames.length > 0 ? projectLeaderNames.join(', ') : 'Chưa cấp quyền'}
                   </strong>
                 </span>
                 <span>
                   Thành viên thực hiện:{' '}
-                  <strong className="text-slate-800 dark:text-slate-200">
+                  <strong className="text-ink dark:text-slate-200">
                     {projectMemberNames.length > 0 ? projectMemberNames.join(', ') : '—'}
                   </strong>
                 </span>
               </div>
-            </div>
+            </SectionCard>
 
             {/* 9-Step Standard Workflow Stepper */}
             <WorkflowStepper
@@ -471,17 +453,17 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <ProjectContractsCard contracts={project.contracts} technicalNotes={project.technicalNotes} />
 
             {/* Leadership Directive & Evaluation Panel */}
-            <div className="p-5 sm:p-6 rounded-3xl bg-linear-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 shadow-xs space-y-4">
+            <div className="card p-5 sm:p-6 bg-gold-100/40 dark:bg-gold-500/5 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold">
+                  <div className="w-9 h-9 rounded-2xl bg-gold-500 text-navy-950 flex items-center justify-center font-bold">
                     <Sparkles className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100">
+                    <h3 className="font-bold text-sm sm:text-base text-ink dark:text-slate-100">
                       Ý kiến Định hướng & Chỉ đạo của Ban Giám hiệu
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <p className="text-xs text-ink-soft dark:text-slate-400">
                       {projectLeaderNames.length > 0
                         ? `${projectLeaderNames.join(' & ')} trực tiếp theo dõi và chỉ đạo`
                         : 'Ban lãnh đạo được cấp quyền theo dõi và chỉ đạo'}
@@ -491,37 +473,35 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
                 {/* Leader Evaluation Badge if evaluated */}
                 {project.evaluation && (
-                  <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs">
-                    <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                    <div className="text-xs">
-                      <span className="font-bold text-slate-900 dark:text-white">
-                        Xếp loại:{' '}
-                        {project.evaluation.rating === 'excellent'
-                          ? 'Xuất sắc'
-                          : project.evaluation.rating === 'good'
-                          ? 'Đạt yêu cầu'
-                          : 'Cần tối ưu'}
-                      </span>
-                      <span className="text-[10px] text-slate-400 block">
-                        Đánh giá bởi {project.evaluation.evaluatedBy}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <StatusBadge tone="gold">
+                      <Star className="w-3.5 h-3.5 fill-current" />
+                      Xếp loại:{' '}
+                      {project.evaluation.rating === 'excellent'
+                        ? 'Xuất sắc'
+                        : project.evaluation.rating === 'good'
+                        ? 'Đạt yêu cầu'
+                        : 'Cần tối ưu'}
+                    </StatusBadge>
+                    <span className="text-[10px] text-ink-soft dark:text-slate-400">
+                      Đánh giá bởi {project.evaluation.evaluatedBy}
+                    </span>
                   </div>
                 )}
               </div>
 
               {/* Directive Display */}
               {project.directive && (
-                <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs shadow-xs">
+                <div className="p-4 rounded-2xl bg-parchment dark:bg-night-card border border-line dark:border-night-line text-xs">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-bold text-amber-600 dark:text-amber-400">
+                    <span className="font-bold text-gold-600 dark:text-gold-400">
                       {project.directive.authorName} ({project.directive.authorTitle})
                     </span>
-                    <span className="text-[10px] text-slate-400 font-mono">
+                    <span className="text-[10px] text-ink-soft dark:text-slate-400 font-mono">
                       {formatDateTimeVN(project.directive.createdAt)}
                     </span>
                   </div>
-                  <p className="text-slate-700 dark:text-slate-300 italic leading-relaxed text-sm">
+                  <p className="text-ink dark:text-slate-300 italic leading-relaxed text-sm">
                     &ldquo;{project.directive.content}&rdquo;
                   </p>
                 </div>
@@ -529,7 +509,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
               {/* Evaluation comment if any */}
               {project.evaluation?.comment && (
-                <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-900 dark:text-emerald-200">
+                <div className="p-3.5 rounded-2xl bg-pine-100/60 dark:bg-pine-600/10 border border-pine-500/25 text-xs text-pine-700 dark:text-pine-500">
                   <strong className="block font-semibold mb-0.5">Nhận xét chuyên môn của Lãnh đạo:</strong>
                   {project.evaluation.comment}
                 </div>
@@ -544,12 +524,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       value={directiveInput}
                       onChange={(e) => setDirectiveInput(e.target.value)}
                       placeholder="Nhập ý kiến chỉ đạo mới cho Thầy Trần Quốc Vương và đội kỹ sư..."
-                      className="flex-1 px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-amber-500 shadow-xs"
+                      className="input flex-1"
                     />
-                    <button
-                      type="submit"
-                      className="px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
-                    >
+                    <button type="submit" className="btn-primary shrink-0">
                       <Send className="w-3.5 h-3.5" />
                       Gửi chỉ đạo
                     </button>
@@ -560,7 +537,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       <button
                         type="button"
                         onClick={() => setShowEvalForm(true)}
-                        className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
+                        className="btn-quiet"
                       >
                         <Star className="w-3.5 h-3.5" />
                         {project.evaluation ? 'Đánh giá lại gói thầu' : 'Chấm điểm / Đánh giá xếp loại gói thầu này'}
@@ -568,46 +545,36 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     ) : (
                       <form
                         onSubmit={handleSubmitEvaluation}
-                        className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-3 text-xs shadow-xs"
+                        className="p-4 rounded-2xl bg-parchment dark:bg-night-card border border-line dark:border-night-line space-y-3"
                       >
-                        <div className="font-bold text-slate-800 dark:text-slate-200">
+                        <div className="font-bold text-[13px] text-ink dark:text-slate-200">
                           Đánh giá chất lượng thực hiện gói thầu:
                         </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          {(['excellent', 'good', 'needs_improvement'] as const).map((r) => (
-                            <button
-                              key={r}
-                              type="button"
-                              onClick={() => setEvalRating(r)}
-                              className={`py-2 px-3 rounded-xl font-bold transition-all border ${
-                                evalRating === r
-                                  ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-xs'
-                                  : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                              }`}
-                            >
-                              {r === 'excellent' ? 'Xuất sắc' : r === 'good' ? 'Đạt yêu cầu' : 'Cần tối ưu'}
-                            </button>
-                          ))}
-                        </div>
+                        <SegmentedControl
+                          value={evalRating}
+                          onChange={(v) => setEvalRating(v)}
+                          options={[
+                            { value: 'excellent', label: 'Xuất sắc' },
+                            { value: 'good', label: 'Đạt yêu cầu' },
+                            { value: 'needs_improvement', label: 'Cần tối ưu' },
+                          ]}
+                        />
                         <textarea
                           rows={2}
                           value={evalComment}
                           onChange={(e) => setEvalComment(e.target.value)}
                           placeholder="Nhập nhận xét hoặc lưu ý chuyên môn của Ban Giám hiệu..."
-                          className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-xs"
+                          className="input"
                         />
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
                             onClick={() => setShowEvalForm(false)}
-                            className="px-3 py-1.5 text-slate-500 hover:text-slate-700 text-xs cursor-pointer"
+                            className="btn-ghost"
                           >
                             Hủy
                           </button>
-                          <button
-                            type="submit"
-                            className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs cursor-pointer"
-                          >
+                          <button type="submit" className="btn-gold">
                             Lưu đánh giá
                           </button>
                         </div>
@@ -625,57 +592,22 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         {activeTab === 'tasks' && (
           <div className="space-y-6">
             {/* Tasks Management & View Modes */}
-            <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
-                    Hạng mục Nhiệm vụ & Báo cáo kỹ thuật ({projectTasks.length})
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Phê duyệt bởi Thầy Trần Quốc Vương • Thực hiện bởi Đội kỹ thuật hiện trường
-                  </p>
-                </div>
-
-                {/* View Switcher: List vs Kanban vs Gantt */}
-                <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs">
-                  <button
-                    onClick={() => setTaskViewMode('list')}
-                    className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors ${
-                      taskViewMode === 'list'
-                        ? 'bg-white dark:bg-slate-700 text-amber-500 shadow-xs font-bold'
-                        : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  >
-                    <List className="w-3.5 h-3.5" />
-                    Danh sách
-                  </button>
-
-                  <button
-                    onClick={() => setTaskViewMode('kanban')}
-                    className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors ${
-                      taskViewMode === 'kanban'
-                        ? 'bg-white dark:bg-slate-700 text-amber-500 shadow-xs font-bold'
-                        : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  >
-                    <LayoutGrid className="w-3.5 h-3.5" />
-                    Bảng Kanban
-                  </button>
-
-                  <button
-                    onClick={() => setTaskViewMode('timeline')}
-                    className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors ${
-                      taskViewMode === 'timeline'
-                        ? 'bg-white dark:bg-slate-700 text-amber-500 shadow-xs font-bold'
-                        : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  >
-                    <CalendarRange className="w-3.5 h-3.5" />
-                    Gantt
-                  </button>
-                </div>
-              </div>
-
+            <SectionCard
+              title={`Hạng mục Nhiệm vụ & Báo cáo kỹ thuật (${projectTasks.length})`}
+              subtitle="Phê duyệt bởi Thầy Trần Quốc Vương • Thực hiện bởi Đội kỹ thuật hiện trường"
+              action={
+                <SegmentedControl
+                  size="sm"
+                  value={taskViewMode}
+                  onChange={(v) => setTaskViewMode(v)}
+                  options={[
+                    { value: 'list', label: 'Danh sách', icon: <List className="w-3.5 h-3.5" /> },
+                    { value: 'kanban', label: 'Bảng Kanban', icon: <LayoutGrid className="w-3.5 h-3.5" /> },
+                    { value: 'timeline', label: 'Gantt', icon: <CalendarRange className="w-3.5 h-3.5" /> },
+                  ]}
+                />
+              }
+            >
               {/* Task Views Rendering */}
               {taskViewMode === 'list' && (
                 <TaskListView
@@ -703,8 +635,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   onSelectTask={(t) => setInspectTask(t)}
                 />
               )}
-            </div>
-
+            </SectionCard>
           </div>
         )}
 
@@ -712,21 +643,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         {activeTab === 'media' && (
           <div className="space-y-6">
             {/* Field Proof Gallery (Videos 10 mins & Photos) */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
-                    Minh chứng Hiện trường (Video 10 phút & Ảnh nghiệm thu)
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Bằng chứng thực địa phục vụ công tác giám sát của Lãnh đạo và thanh quyết toán
-                  </p>
-                </div>
-              </div>
-
+            <SectionCard
+              title="Minh chứng Hiện trường (Video 10 phút & Ảnh nghiệm thu)"
+              subtitle="Bằng chứng thực địa phục vụ công tác giám sát của Lãnh đạo và thanh quyết toán"
+            >
               <ProjectGallery projectId={project.id} tasks={projectTasks} />
-            </div>
-
+            </SectionCard>
           </div>
         )}
 
@@ -734,56 +656,36 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         {activeTab === 'incidents' && (
           <div className="space-y-6">
             {/* Incidents & Field Obstacles Integrated Section */}
-            <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <SectionCard
+              title={`Nhật trình Sự cố & Trở ngại thi công (${projectIncidents.length})`}
+              subtitle="Thời tiết mưa bão, chậm vật tư, vướng mặt bằng và biện pháp khắc phục"
+              action={
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center font-bold">
-                    <AlertTriangle className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                      <span>Nhật trình Sự cố & Trở ngại thi công ({projectIncidents.length})</span>
-                      {unresolvedIncidents.length > 0 && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold font-mono">
-                          {unresolvedIncidents.length} cần xử lý
-                        </span>
-                      )}
-                    </h3>
-                    <p className="text-xs text-slate-400">
-                      Thời tiết mưa bão, chậm vật tư, vướng mặt bằng và biện pháp khắc phục
-                    </p>
-                  </div>
+                  {unresolvedIncidents.length > 0 && (
+                    <StatusBadge tone="rose" dot>
+                      {unresolvedIncidents.length} cần xử lý
+                    </StatusBadge>
+                  )}
+                  <SegmentedControl
+                    size="sm"
+                    value={incidentFilter}
+                    onChange={(v) => setIncidentFilter(v)}
+                    options={[
+                      { value: 'all', label: 'Tất cả' },
+                      { value: 'open', label: 'Mới' },
+                      { value: 'resolving', label: 'Đang xử lý' },
+                      { value: 'resolved', label: 'Đã giải quyết' },
+                    ]}
+                  />
                 </div>
-
-                {/* Filter */}
-                <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs">
-                  {(
-                    [
-                      { id: 'all', label: 'Tất cả' },
-                      { id: 'open', label: 'Mới' },
-                      { id: 'resolving', label: 'Đang xử lý' },
-                      { id: 'resolved', label: 'Đã giải quyết' },
-                    ] as const
-                  ).map((f) => (
-                    <button
-                      key={f.id}
-                      onClick={() => setIncidentFilter(f.id)}
-                      className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${
-                        incidentFilter === f.id
-                          ? 'bg-white dark:bg-slate-700 text-amber-500 shadow-xs font-bold'
-                          : 'text-slate-500 hover:text-slate-800'
-                      }`}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
+              }
+            >
               {filteredIncidents.length === 0 ? (
-                <div className="py-8 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
-                  Hiện trường không có trở ngại nào trong danh mục này.
-                </div>
+                <EmptyState
+                  icon={<AlertTriangle className="w-6 h-6" />}
+                  title="Không có trở ngại nào trong danh mục này"
+                  description="Hiện trường không có trở ngại nào trong danh mục này."
+                />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                   {filteredIncidents.map((inc) => {
@@ -796,10 +698,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         key={inc.id}
                         className={`p-4 rounded-2xl border text-xs flex flex-col justify-between ${
                           isResolved
-                            ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'
+                            ? 'bg-parchment dark:bg-night-line/40 border-line dark:border-night-line'
                             : inc.severity === 'critical' || inc.severity === 'high'
-                            ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-300 dark:border-rose-900/60'
-                            : 'bg-amber-50/40 dark:bg-amber-950/20 border-amber-300/60 dark:border-amber-900/40'
+                            ? 'bg-rose-50/60 dark:bg-rose-500/5 border-rose-300 dark:border-rose-500/30'
+                            : 'bg-gold-100/40 dark:bg-gold-500/5 border-gold-500/30 dark:border-gold-500/25'
                         }`}
                       >
                         <div>
@@ -812,43 +714,45 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                 {st.label}
                               </span>
                             </div>
-                            <span className="text-[10px] text-slate-400 font-mono">
-                              {formatDateVN(inc.reportedAt)}
-                            </span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] text-ink-soft dark:text-slate-400 font-mono">
+                                {formatDateVN(inc.reportedAt)}
+                              </span>
+                              {!isResolved && (isAdmin || isAssignee) && (
+                                <RowMenu
+                                  label="Thao tác sự cố"
+                                  items={[
+                                    {
+                                      label: 'Đánh dấu đã xử lý xong',
+                                      icon: <Check className="w-4 h-4" />,
+                                      onClick: () => handleResolveIncident(inc.taskId, inc.id),
+                                    },
+                                  ]}
+                                />
+                              )}
+                            </div>
                           </div>
 
-                          <h4 className="font-bold text-slate-900 dark:text-slate-100 text-xs">
+                          <h4 className="font-bold text-ink dark:text-slate-100 text-xs">
                             {inc.title}
                           </h4>
-                          <p className="text-slate-600 dark:text-slate-300 text-[11px] mt-1 leading-relaxed">
+                          <p className="text-ink-soft dark:text-slate-300 text-[11px] mt-1 leading-relaxed">
                             {inc.description}
                           </p>
 
                           {inc.solution && (
-                            <div className="mt-2.5 p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-800 dark:text-emerald-300">
+                            <div className="mt-2.5 p-2 rounded-xl bg-pine-100/60 dark:bg-pine-600/10 border border-pine-500/25 text-[11px] text-pine-700 dark:text-pine-500">
                               <strong className="block font-semibold">Phương án xử lý:</strong>
                               {inc.solution}
                             </div>
                           )}
                         </div>
-
-                        {!isResolved && (isAdmin || isAssignee) && (
-                          <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-700/60 flex justify-end">
-                            <button
-                              onClick={() => handleResolveIncident(inc.taskId, inc.id)}
-                              className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] flex items-center gap-1 shadow-xs"
-                            >
-                              <Check className="w-3 h-3 stroke-[3]" />
-                              Đánh dấu đã xử lý xong
-                            </button>
-                          </div>
-                        )}
                       </div>
                     );
                   })}
                 </div>
               )}
-            </div>
+            </SectionCard>
           </div>
         )}
 
@@ -859,55 +763,38 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           <div className="space-y-6">
             {/* 4 Golden Financial Metrics */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-                <div className="flex items-center justify-between text-slate-400 mb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider">Tổng kinh phí gói thầu</span>
-                  <DollarSign className="w-4 h-4 text-amber-500" />
-                </div>
-                <div className="font-mono text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-                  {formatCurrencyVN(totalBudget)}
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1">Dự toán phê duyệt theo hợp đồng</p>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-                <div className="flex items-center justify-between text-emerald-500 mb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider">Đã giải ngân / Đã nộp</span>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                </div>
-                <div className="font-mono text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                  {formatCurrencyVN(paidAmount)}
-                </div>
-                <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 font-semibold">
-                  Đạt {paidPercent}% ({paidMilestones.length}/{milestones.length} đợt)
-                </div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-                <div className="flex items-center justify-between text-amber-500 mb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider">Còn lại cần nộp</span>
-                  <CreditCard className="w-4 h-4 text-amber-500" />
-                </div>
-                <div className="font-mono text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400">
-                  {formatCurrencyVN(remainingAmount)}
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  {100 - paidPercent}% ngân sách còn lại
-                </p>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-                <div className="flex items-center justify-between text-indigo-500 mb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider">Đợt nộp kế tiếp</span>
-                  <Clock className="w-4 h-4 text-indigo-500" />
-                </div>
-                <div className="font-bold text-sm text-slate-900 dark:text-white truncate">
-                  {nextMilestone ? nextMilestone.title : 'Đã thanh toán 100%'}
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1 font-mono">
-                  {nextMilestone ? `Hạn: ${formatDateVN(nextMilestone.dueDate)}` : 'Hoàn tất giải ngân'}
-                </p>
-              </div>
+              <StatCard
+                label="Tổng kinh phí gói thầu"
+                value={formatCurrencyVN(totalBudget)}
+                sub="Dự toán phê duyệt theo hợp đồng"
+                icon={<DollarSign className="w-4.5 h-4.5" />}
+                tone="navy"
+              />
+              <StatCard
+                label="Đã giải ngân / Đã nộp"
+                value={formatCurrencyVN(paidAmount)}
+                sub={`Đạt ${paidPercent}% (${paidMilestones.length}/${milestones.length} đợt)`}
+                icon={<CheckCircle2 className="w-4.5 h-4.5" />}
+                tone="pine"
+              />
+              <StatCard
+                label="Còn lại cần nộp"
+                value={formatCurrencyVN(remainingAmount)}
+                sub={`${100 - paidPercent}% ngân sách còn lại`}
+                icon={<CreditCard className="w-4.5 h-4.5" />}
+                tone="gold"
+              />
+              <StatCard
+                label="Đợt nộp kế tiếp"
+                value={
+                  <span className="text-lg leading-snug block truncate">
+                    {nextMilestone ? nextMilestone.title : 'Đã thanh toán 100%'}
+                  </span>
+                }
+                sub={nextMilestone ? `Hạn: ${formatDateVN(nextMilestone.dueDate)}` : 'Hoàn tất giải ngân'}
+                icon={<Clock className="w-4.5 h-4.5" />}
+                tone="slate"
+              />
             </div>
 
             {/* Official Contracts & Contractor Card */}
@@ -918,19 +805,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
             {/* Milestones Stepper Visual Track */}
             {milestones.length > 0 && (
-              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-                      Phân kỳ các đợt nộp tiền ({milestones.length} đợt)
-                    </h3>
-                    <p className="text-xs text-slate-400">
-                      Gắn liền với nghiệm thu kỹ thuật và cam kết bảo hành 5%
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+              <SectionCard
+                title={`Phân kỳ các đợt nộp tiền (${milestones.length} đợt)`}
+                subtitle="Gắn liền với nghiệm thu kỹ thuật và cam kết bảo hành 5%"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   {milestones.map((m, idx) => {
                     const isPaid = m.status === 'paid';
                     const isOverdue = m.status === 'overdue';
@@ -940,46 +819,46 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         key={m.id}
                         className={`p-4 rounded-2xl border transition-all ${
                           isPaid
-                            ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800'
+                            ? 'bg-pine-100/50 dark:bg-pine-600/10 border-pine-500/40 dark:border-pine-600/40'
                             : isOverdue
-                            ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-300 dark:border-rose-800'
-                            : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'
+                            ? 'bg-rose-50/60 dark:bg-rose-500/5 border-rose-300 dark:border-rose-500/30'
+                            : 'bg-parchment dark:bg-night-line/40 border-line dark:border-night-line'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-white dark:bg-night-card text-ink dark:text-slate-300 border border-line dark:border-night-line">
                             Đợt {idx + 1} ({m.percentage}%)
                           </span>
                           {isPaid ? (
-                            <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                            <StatusBadge tone="pine">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
                               Đã nộp
-                            </span>
+                            </StatusBadge>
                           ) : isOverdue ? (
-                            <span className="flex items-center gap-1 text-[11px] font-bold text-rose-600">
-                              <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                            <StatusBadge tone="rose">
+                              <AlertTriangle className="w-3.5 h-3.5" />
                               Quá hạn
-                            </span>
+                            </StatusBadge>
                           ) : (
-                            <span className="flex items-center gap-1 text-[11px] font-bold text-amber-500">
-                              <Clock className="w-3.5 h-3.5 text-amber-500" />
+                            <StatusBadge tone="gold">
+                              <Clock className="w-3.5 h-3.5" />
                               Chưa nộp
-                            </span>
+                            </StatusBadge>
                           )}
                         </div>
 
-                        <div className="font-mono font-black text-slate-900 dark:text-white text-sm">
+                        <div className="font-mono font-black text-ink dark:text-white text-sm">
                           {formatCurrencyVN(m.amount)}
                         </div>
 
-                        <h4 className="font-bold text-xs text-slate-800 dark:text-slate-200 mt-1 line-clamp-1">
+                        <h4 className="font-bold text-xs text-ink dark:text-slate-200 mt-1 line-clamp-1">
                           {m.title}
                         </h4>
 
-                        <div className="text-[10px] text-slate-400 mt-2 font-mono flex items-center justify-between">
+                        <div className="text-[10px] text-ink-soft dark:text-slate-400 mt-2 font-mono flex items-center justify-between">
                           <span>Hạn: {formatDateVN(m.dueDate)}</span>
                           {m.paidDate && (
-                            <span className="text-emerald-600 font-semibold">
+                            <span className="text-pine-600 font-semibold">
                               Nộp: {formatDateVN(m.paidDate)}
                             </span>
                           )}
@@ -988,142 +867,127 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     );
                   })}
                 </div>
-              </div>
+              </SectionCard>
             )}
 
             {/* Milestones Detailed Table with Admin Confirmation Action */}
-            <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-                    Bảng kiểm soát thanh toán & Chứng từ giải ngân
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Chủ trì dự án (Thầy Trần Quốc Vương) đối soát hồ sơ và xác nhận nộp tiền
-                  </p>
-                </div>
-              </div>
+            <SectionCard
+              title="Bảng kiểm soát thanh toán & Chứng từ giải ngân"
+              subtitle="Chủ trì dự án (Thầy Trần Quốc Vương) đối soát hồ sơ và xác nhận nộp tiền"
+              pad={false}
+            >
+              <div className="overflow-x-auto">
+                <table className="table-base">
+                  <thead>
+                    <tr>
+                      <th>Đợt nộp & Tên mốc</th>
+                      <th>Tỷ lệ</th>
+                      <th>Số tiền (VNĐ)</th>
+                      <th>Điều kiện nghiệm thu</th>
+                      <th>Hạn nộp</th>
+                      <th>Ngày nộp</th>
+                      <th>Trạng thái</th>
+                      <th className="text-right">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {milestones.map((m) => {
+                      const isPaid = m.status === 'paid';
+                      const isOverdue = m.status === 'overdue';
 
-              <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 uppercase tracking-wider font-semibold">
-                      <tr>
-                        <th className="py-3 px-4">Đợt nộp & Tên mốc</th>
-                        <th className="py-3 px-4">Tỷ lệ</th>
-                        <th className="py-3 px-4">Số tiền (VNĐ)</th>
-                        <th className="py-3 px-4">Điều kiện nghiệm thu</th>
-                        <th className="py-3 px-4">Hạn nộp</th>
-                        <th className="py-3 px-4">Ngày nộp</th>
-                        <th className="py-3 px-4">Trạng thái</th>
-                        <th className="py-3 px-4 text-right">Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {milestones.map((m) => {
-                        const isPaid = m.status === 'paid';
-                        const isOverdue = m.status === 'overdue';
-
-                        return (
-                          <tr
-                            key={m.id}
-                            className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
-                          >
-                            <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">
-                              <div className="flex items-center gap-2">
-                                <Receipt className="w-4 h-4 text-amber-500 shrink-0" />
-                                <div>
-                                  <div>{m.title}</div>
-                                  {(m.receiptUrl || m.proofFile) && (
-                                    <span className="text-[10px] text-indigo-500 font-normal hover:underline">
-                                      Biên lai: {m.receiptUrl || m.proofFile}
-                                    </span>
-                                  )}
-                                </div>
+                      return (
+                        <tr key={m.id}>
+                          <td className="font-bold text-ink dark:text-slate-100">
+                            <div className="flex items-center gap-2">
+                              <Receipt className="w-4 h-4 text-gold-600 shrink-0" />
+                              <div>
+                                <div>{m.title}</div>
+                                {(m.receiptUrl || m.proofFile) && (
+                                  <span className="text-[10px] text-sky-600 dark:text-sky-400 font-normal hover:underline">
+                                    Biên lai: {m.receiptUrl || m.proofFile}
+                                  </span>
+                                )}
                               </div>
-                            </td>
+                            </div>
+                          </td>
 
-                            <td className="py-3 px-4 font-mono font-bold text-slate-600 dark:text-slate-300">
-                              {m.percentage}%
-                            </td>
+                          <td className="font-mono font-bold text-ink-soft dark:text-slate-300">
+                            {m.percentage}%
+                          </td>
 
-                            <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
-                              {formatCurrencyVN(m.amount)}
-                            </td>
+                          <td className="font-mono font-bold text-ink dark:text-slate-100 whitespace-nowrap">
+                            {formatCurrencyVN(m.amount)}
+                          </td>
 
-                            <td className="py-3 px-4 text-slate-500 dark:text-slate-400 max-w-xs">
-                              {m.description || m.note}
-                            </td>
+                          <td className="text-ink-soft dark:text-slate-400 max-w-xs">
+                            {m.description || m.note}
+                          </td>
 
-                            <td className="py-3 px-4 font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                              {formatDateVN(m.dueDate)}
-                            </td>
+                          <td className="font-mono text-ink-soft dark:text-slate-400 whitespace-nowrap">
+                            {formatDateVN(m.dueDate)}
+                          </td>
 
-                            <td className="py-3 px-4 font-mono text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                              {m.paidDate ? formatDateVN(m.paidDate) : '—'}
-                            </td>
+                          <td className="font-mono text-pine-600 dark:text-pine-500 whitespace-nowrap">
+                            {m.paidDate ? formatDateVN(m.paidDate) : '—'}
+                          </td>
 
-                            <td className="py-3 px-4 whitespace-nowrap">
-                              {isPaid ? (
-                                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1 w-fit">
-                                  <Check className="w-3 h-3 stroke-[3]" />
-                                  Đã nộp
-                                </span>
-                              ) : isOverdue ? (
-                                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20 flex items-center gap-1 w-fit">
-                                  <AlertTriangle className="w-3 h-3" />
-                                  Quá hạn
-                                </span>
-                              ) : (
-                                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1 w-fit">
-                                  <Clock className="w-3 h-3" />
-                                  Chưa nộp
-                                </span>
-                              )}
-                            </td>
+                          <td className="whitespace-nowrap">
+                            {isPaid ? (
+                              <StatusBadge tone="pine">
+                                <Check className="w-3 h-3 stroke-[3]" />
+                                Đã nộp
+                              </StatusBadge>
+                            ) : isOverdue ? (
+                              <StatusBadge tone="rose">
+                                <AlertTriangle className="w-3 h-3" />
+                                Quá hạn
+                              </StatusBadge>
+                            ) : (
+                              <StatusBadge tone="gold">
+                                <Clock className="w-3 h-3" />
+                                Chưa nộp
+                              </StatusBadge>
+                            )}
+                          </td>
 
-                            <td className="py-3 px-4 text-right whitespace-nowrap">
-                              {isAdmin && !isPaid ? (
-                                <button
-                                  onClick={() => handleConfirmMilestonePayment(m.id, m.title)}
-                                  className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-xs transition-all inline-flex items-center gap-1.5 cursor-pointer"
-                                >
-                                  <Check className="w-3.5 h-3.5 stroke-[3]" />
-                                  Xác nhận đã nộp
-                                </button>
-                              ) : isPaid ? (
-                                <span className="text-[11px] text-slate-400 italic">
-                                  Đã đối soát đạt
-                                </span>
-                              ) : (
-                                <span className="text-[11px] text-slate-400 italic">
-                                  Chờ Admin duyệt
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                          <td className="text-right whitespace-nowrap">
+                            {isAdmin && !isPaid ? (
+                              <RowMenu
+                                label="Thao tác đợt nộp"
+                                items={[
+                                  {
+                                    label: 'Xác nhận đã nộp',
+                                    icon: <Check className="w-4 h-4" />,
+                                    onClick: () => handleConfirmMilestonePayment(m.id, m.title),
+                                  },
+                                ]}
+                              />
+                            ) : isPaid ? (
+                              <span className="text-[11px] text-ink-soft dark:text-slate-400 italic">
+                                Đã đối soát đạt
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-ink-soft dark:text-slate-400 italic">
+                                Chờ Admin duyệt
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-            </div>
+            </SectionCard>
           </div>
         )}
 
         {/* TAB: TRAO ĐỔI */}
         {activeTab === 'chat' && (
           <div className="space-y-6">
-            <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-amber-500" />
-                <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-                  Kênh Trao đổi Nội bộ Gói thầu
-                </h3>
-              </div>
+            <SectionCard title="Kênh Trao đổi Nội bộ Gói thầu">
               <ProjectChat projectId={project.id} />
-            </div>
+            </SectionCard>
           </div>
         )}
 
@@ -1133,59 +997,58 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <ProjectMembers project={project} isReadOnly={false} />
 
             {/* Bảng phân quyền lãnh đạo theo dự án */}
-            <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-              <div>
-                <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-                  Bảng phân quyền lãnh đạo — Dự án này
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Lãnh đạo chỉ xem được dự án được cấp quyền. Bật công tắc để cấp / thu hồi quyền xem dự án này cho từng lãnh đạo.
+            <SectionCard
+              title="Bảng phân quyền lãnh đạo — Dự án này"
+              subtitle="Lãnh đạo chỉ xem được dự án được cấp quyền. Bật công tắc để cấp / thu hồi quyền xem dự án này cho từng lãnh đạo."
+              pad={false}
+            >
+              <div className="overflow-x-auto">
+                <table className="table-base">
+                  <thead>
+                    <tr>
+                      <th>Lãnh đạo</th>
+                      <th>Quyền xem dự án này</th>
+                      <th className="text-right">Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allLeaders.map((leader) => {
+                      const canView = (project.leaderIds || []).includes(leader.id);
+                      return (
+                        <tr key={leader.id}>
+                          <td>
+                            <div className="flex items-center gap-3 min-w-0">
+                              <Avatar text={leader.avatar} size="sm" tone="pine" />
+                              <div className="min-w-0">
+                                <div className="font-bold text-[13px] text-ink dark:text-slate-200 truncate">{leader.name}</div>
+                                <div className="text-[11px] text-ink-soft dark:text-slate-400 truncate">{leader.title}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <Switch
+                              checked={canView}
+                              onChange={(v) => toggleLeaderAccess(project.id, leader.id, v)}
+                              label={`Được xem dự án này: ${leader.name}`}
+                            />
+                          </td>
+                          <td className="text-right">
+                            <StatusBadge tone={canView ? 'pine' : 'slate'} dot>
+                              {canView ? 'Được xem dự án này' : 'Không được xem'}
+                            </StatusBadge>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {allLeaders.length === 0 && (
+                <p className="text-xs text-ink-soft dark:text-slate-400 px-5 pb-5">
+                  Chưa có tài khoản lãnh đạo nào trong hệ thống.
                 </p>
-              </div>
-              <div className="space-y-2.5">
-                {allLeaders.map((leader) => {
-                  const canView = (project.leaderIds || []).includes(leader.id);
-                  return (
-                    <div
-                      key={leader.id}
-                      className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex items-center justify-between gap-3"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-500 font-bold flex items-center justify-center text-xs shrink-0">
-                          {leader.avatar}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-bold text-xs text-slate-800 dark:text-slate-200 truncate">{leader.name}</div>
-                          <div className="text-[11px] text-slate-400 truncate">{leader.title}</div>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={canView}
-                        aria-label={`Được xem dự án này: ${leader.name}`}
-                        onClick={() => toggleLeaderAccess(project.id, leader.id, !canView)}
-                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                          canView ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
-                        }`}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition ${
-                            canView ? 'translate-x-5' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
-                      <span className={`text-[11px] font-bold w-24 text-right ${canView ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
-                        {canView ? 'Được xem dự án này' : 'Không được xem'}
-                      </span>
-                    </div>
-                  );
-                })}
-                {allLeaders.length === 0 && (
-                  <p className="text-xs text-slate-400">Chưa có tài khoản lãnh đạo nào trong hệ thống.</p>
-                )}
-              </div>
-            </div>
+              )}
+            </SectionCard>
           </div>
         )}
 

@@ -13,7 +13,7 @@ export function CircularProgress({
   value,
   size = 120,
   strokeWidth = 10,
-  color = '#F59E0B',
+  color = '#0e7c5b',
   label,
   sublabel,
 }: CircularProgressProps) {
@@ -32,7 +32,7 @@ export function CircularProgress({
           r={radius}
           stroke="currentColor"
           strokeWidth={strokeWidth}
-          className="text-slate-100 dark:text-slate-800"
+          className="text-cream-deep dark:text-night-line"
           fill="transparent"
         />
         {/* Animated Progress indicator */}
@@ -51,21 +51,20 @@ export function CircularProgress({
       </svg>
       {/* Center text */}
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="font-extrabold font-tabular text-slate-900 dark:text-white" style={{ fontSize: size * 0.22 }}>
+        <span className="font-extrabold font-tabular text-ink dark:text-white" style={{ fontSize: size * 0.22 }}>
           {clampedValue}%
         </span>
         {label && (
-          <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+          <span className="text-[10px] uppercase font-bold text-ink-soft dark:text-slate-400 tracking-wider">
             {label}
           </span>
         )}
       </div>
       {sublabel && (
-        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
+        <span className="text-xs font-medium text-ink-soft dark:text-slate-400 mt-1">
           {sublabel}
         </span>
       )}
     </div>
   );
 }
-

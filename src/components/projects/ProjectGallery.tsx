@@ -16,6 +16,10 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { formatDateVN } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/cards';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { IconBtn } from '@/components/ui/RowMenu';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 
 interface ProjectGalleryProps {
   projectId: string;
@@ -68,51 +72,53 @@ export function ProjectGallery({ projectId, tasks }: ProjectGalleryProps) {
   const currentAttachment =
     lightboxIndex !== null ? filteredAttachments[lightboxIndex] : null;
 
+  const goPrev = () => {
+    setLightboxIndex((prev) =>
+      prev !== null
+        ? (prev - 1 + filteredAttachments.length) % filteredAttachments.length
+        : null
+    );
+    setZoomLevel(1);
+  };
+
+  const goNext = () => {
+    setLightboxIndex((prev) =>
+      prev !== null ? (prev + 1) % filteredAttachments.length : null
+    );
+    setZoomLevel(1);
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Gallery Filter Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setActiveType('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
-              activeType === 'all'
-                ? 'bg-amber-500 text-slate-950 font-bold'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-            }`}
-          >
-            Tất cả ({projectAttachments.length})
-          </button>
-          <button
-            onClick={() => setActiveType('image')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors ${
-              activeType === 'image'
-                ? 'bg-amber-500 text-slate-950 font-bold'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-            }`}
-          >
-            <ImageIcon className="w-3.5 h-3.5" />
-            Hình ảnh ({projectAttachments.filter((a) => a.type === 'image').length})
-          </button>
-          <button
-            onClick={() => setActiveType('video')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors ${
-              activeType === 'video'
-                ? 'bg-amber-500 text-slate-950 font-bold'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-            }`}
-          >
-            <Video className="w-3.5 h-3.5" />
-            Video clip ({projectAttachments.filter((a) => a.type === 'video').length})
-          </button>
-        </div>
+      <div className="card px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <SegmentedControl<'all' | 'image' | 'video'>
+          value={activeType}
+          onChange={(v) => setActiveType(v)}
+          size="sm"
+          options={[
+            { value: 'all', label: 'Tất cả', count: projectAttachments.length },
+            {
+              value: 'image',
+              label: 'Hình ảnh',
+              count: projectAttachments.filter((a) => a.type === 'image').length,
+              icon: <ImageIcon className="w-3.5 h-3.5" />,
+            },
+            {
+              value: 'video',
+              label: 'Video clip',
+              count: projectAttachments.filter((a) => a.type === 'video').length,
+              icon: <Video className="w-3.5 h-3.5" />,
+            },
+          ]}
+        />
 
         {/* Task filter dropdown */}
         <select
           value={selectedTaskFilter}
           onChange={(e) => setSelectedTaskFilter(e.target.value)}
           aria-label="Lọc minh chứng theo hạng mục"
-          className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium focus:outline-none focus:border-amber-500"
+          className="input sm:w-64 py-2 text-xs font-medium"
         >
           <option value="all">Lọc theo tất cả nhiệm vụ</option>
           {tasks.map((t) => (
@@ -125,14 +131,12 @@ export function ProjectGallery({ projectId, tasks }: ProjectGalleryProps) {
 
       {/* Grid of Evidence */}
       {filteredAttachments.length === 0 ? (
-        <div className="py-16 text-center rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900">
-          <ImageIcon className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
-            Chưa có hình ảnh/video nào trong thư mục này
-          </h4>
-          <p className="text-xs text-slate-400 mt-1">
-            Kỹ sư hiện trường sẽ đăng tải minh chứng khi cập nhật tiến độ thi công.
-          </p>
+        <div className="card">
+          <EmptyState
+            icon={<ImageIcon className="w-6 h-6" />}
+            title="Chưa có hình ảnh/video nào trong thư mục này"
+            description="Kỹ sư hiện trường sẽ đăng tải minh chứng khi cập nhật tiến độ thi công."
+          />
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -146,7 +150,7 @@ export function ProjectGallery({ projectId, tasks }: ProjectGalleryProps) {
                   setLightboxIndex(index);
                   setZoomLevel(1);
                 }}
-                className="group relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col"
+                className="group relative rounded-[20px] overflow-hidden bg-navy-950 border border-line dark:border-night-line shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col"
               >
                 {/* Image / Video preview */}
                 <div className="relative h-48 w-full overflow-hidden">
@@ -160,10 +164,10 @@ export function ProjectGallery({ projectId, tasks }: ProjectGalleryProps) {
 
                   {/* Top Type Badge */}
                   <div className="absolute top-2.5 left-2.5">
-                    <span className="px-2 py-0.5 rounded-lg bg-black/60 backdrop-blur-md text-white text-[10px] font-bold flex items-center gap-1 border border-white/20">
+                    <span className="px-2 py-1 rounded-lg bg-black/60 backdrop-blur-md text-white text-[10px] font-bold flex items-center gap-1 border border-white/20">
                       {item.type === 'video' ? (
                         <>
-                          <Video className="w-3 h-3 text-amber-400" />
+                          <Video className="w-3 h-3 text-gold-400" />
                           <span>CLIP {item.duration || 7}s</span>
                         </>
                       ) : (
@@ -177,7 +181,7 @@ export function ProjectGallery({ projectId, tasks }: ProjectGalleryProps) {
 
                   {item.type === 'video' && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="w-11 h-11 rounded-full bg-amber-500/90 text-slate-950 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                      <div className="w-11 h-11 rounded-full bg-gold-500 text-navy-950 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                         <Play className="w-5 h-5 ml-0.5 fill-current" />
                       </div>
                     </div>
@@ -191,21 +195,21 @@ export function ProjectGallery({ projectId, tasks }: ProjectGalleryProps) {
                 </div>
 
                 {/* Info Footer */}
-                <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
-                  <div className="font-bold text-xs text-slate-900 dark:text-slate-100 truncate">
+                <div className="p-3.5 bg-parchment dark:bg-night-card grow">
+                  <div className="font-bold text-xs text-ink dark:text-white truncate">
                     {item.name}
                   </div>
                   {task && (
-                    <div className="text-[11px] text-amber-600 dark:text-amber-400 truncate mt-0.5 font-medium">
+                    <div className="text-[11px] text-gold-600 dark:text-gold-400 truncate mt-0.5 font-semibold">
                       {task.title}
                     </div>
                   )}
                   {item.caption && (
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-1">
+                    <p className="text-[11px] text-ink-soft dark:text-slate-400 line-clamp-1 mt-1">
                       {item.caption}
                     </p>
                   )}
-                  <div className="text-[10px] text-slate-400 mt-1 font-mono">
+                  <div className="text-[10px] text-ink-soft dark:text-slate-500 mt-1.5 font-tabular">
                     {formatDateVN(item.createdAt)}
                   </div>
                 </div>
@@ -215,71 +219,50 @@ export function ProjectGallery({ projectId, tasks }: ProjectGalleryProps) {
         </div>
       )}
 
-      {/* Lightbox Modal */}
+      {/* Lightbox Modal — logic giữ nguyên, khung mới với IconBtn */}
       {currentAttachment && (
         <div
           role="dialog"
           aria-modal="true"
           aria-label="Xem chi tiết ảnh minh chứng"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md animate-in fade-in duration-150 lightbox-modal select-none"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/95 backdrop-blur-md animate-in fade-in duration-150 lightbox-modal select-none"
         >
           {/* Top Bar */}
           <div className="absolute top-0 inset-x-0 p-4 flex items-center justify-between text-white z-20 bg-gradient-to-b from-black/80 to-transparent">
-            <div>
-              <div className="font-bold text-sm text-slate-100 flex items-center gap-2">
-                <span>{currentAttachment.name}</span>
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white/10 text-amber-400">
+            <div className="min-w-0">
+              <div className="font-bold text-sm text-white flex items-center gap-2 flex-wrap">
+                <span className="truncate">{currentAttachment.name}</span>
+                <StatusBadge tone="gold">
                   {lightboxIndex! + 1} / {filteredAttachments.length}
-                </span>
+                </StatusBadge>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">{currentAttachment.caption}</p>
+              <p className="text-xs text-slate-400 mt-0.5 truncate">{currentAttachment.caption}</p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setZoomLevel((z) => Math.max(0.7, z - 0.25))}
-                title="Thu nhỏ"
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
-              >
+            <div className="flex items-center gap-1.5 shrink-0 [&_button]:text-white [&_button]:hover:bg-white/15 [&_button]:hover:text-white">
+              <IconBtn label="Thu nhỏ" onClick={() => setZoomLevel((z) => Math.max(0.7, z - 0.25))}>
                 <ZoomOut className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setZoomLevel((z) => Math.min(2.5, z + 0.25))}
-                title="Phóng to"
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
-              >
+              </IconBtn>
+              <IconBtn label="Phóng to" onClick={() => setZoomLevel((z) => Math.min(2.5, z + 0.25))}>
                 <ZoomIn className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setLightboxIndex(null)}
-                title="Đóng (ESC)"
-                className="p-2 rounded-xl bg-white/10 hover:bg-rose-500 text-white transition-colors ml-2"
-              >
+              </IconBtn>
+              <IconBtn label="Đóng (ESC)" onClick={() => setLightboxIndex(null)}>
                 <X className="w-5 h-5" />
-              </button>
+              </IconBtn>
             </div>
           </div>
 
-          {/* Previous Button */}
-          <button
-            onClick={() => {
-              setLightboxIndex((prev) =>
-                prev !== null
-                  ? (prev - 1 + filteredAttachments.length) % filteredAttachments.length
-                  : null
-              );
-              setZoomLevel(1);
-            }}
-            aria-label="Minh chứng trước"
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/25 text-white transition-all z-20"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
+          {/* Previous */}
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 [&_button]:w-11 [&_button]:h-11 [&_button]:rounded-full [&_button]:bg-white/10 [&_button]:text-white [&_button]:hover:bg-white/25 [&_button]:hover:text-white">
+            <IconBtn label="Minh chứng trước" onClick={goPrev}>
+              <ChevronLeft className="w-6 h-6" />
+            </IconBtn>
+          </div>
 
           {/* Media Viewport */}
           <div className="max-w-4xl max-h-[75vh] p-4 flex items-center justify-center overflow-hidden">
             {currentAttachment.type === 'video' ? (
-              <div className="relative rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 shadow-2xl flex flex-col items-center">
+              <div className="relative rounded-[20px] overflow-hidden border border-night-line bg-navy-950 shadow-2xl flex flex-col items-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={currentAttachment.url}
@@ -288,15 +271,16 @@ export function ProjectGallery({ projectId, tasks }: ProjectGalleryProps) {
                   className="max-h-[60vh] object-contain transition-transform"
                 />
                 {/* Video controls simulation */}
-                <div className="w-full bg-slate-900/90 border-t border-slate-800 p-3 flex items-center justify-between text-xs text-slate-300">
+                <div className="w-full bg-night-card border-t border-night-line p-3 flex items-center justify-between text-xs text-slate-300">
                   <div className="flex items-center gap-3">
-                    <button
+                    <IconBtn
+                      label={isPlayingVideo ? 'Tạm dừng' : 'Phát'}
                       onClick={() => setIsPlayingVideo(!isPlayingVideo)}
-                      className="p-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold"
+                      className="bg-gold-500 text-navy-950 hover:bg-gold-400 hover:text-navy-950 rounded-lg"
                     >
                       {isPlayingVideo ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                    </button>
-                    <span className="font-mono text-amber-400">
+                    </IconBtn>
+                    <span className="font-tabular text-gold-400">
                       00:0{isPlayingVideo ? 4 : 0} / 00:0{currentAttachment.duration || 7}
                     </span>
                   </div>
@@ -311,27 +295,19 @@ export function ProjectGallery({ projectId, tasks }: ProjectGalleryProps) {
                 src={currentAttachment.url}
                 alt={currentAttachment.name}
                 style={{ transform: `scale(${zoomLevel})` }}
-                className="max-h-[75vh] max-w-full object-contain transition-transform duration-200 rounded-xl shadow-2xl"
+                className="max-h-[75vh] max-w-full object-contain transition-transform duration-200 rounded-[20px] shadow-2xl"
               />
             )}
           </div>
 
-          {/* Next Button */}
-          <button
-            onClick={() => {
-              setLightboxIndex((prev) =>
-                prev !== null ? (prev + 1) % filteredAttachments.length : null
-              );
-              setZoomLevel(1);
-            }}
-            aria-label="Minh chứng tiếp theo"
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/25 text-white transition-all z-20"
-          >
-            <ChevronRight className="w-6 h-6" />
-          </button>
+          {/* Next */}
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 [&_button]:w-11 [&_button]:h-11 [&_button]:rounded-full [&_button]:bg-white/10 [&_button]:text-white [&_button]:hover:bg-white/25 [&_button]:hover:text-white">
+            <IconBtn label="Minh chứng tiếp theo" onClick={goNext}>
+              <ChevronRight className="w-6 h-6" />
+            </IconBtn>
+          </div>
         </div>
       )}
     </div>
   );
 }
-

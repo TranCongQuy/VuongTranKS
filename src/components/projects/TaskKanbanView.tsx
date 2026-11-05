@@ -12,6 +12,9 @@ import {
 } from 'lucide-react';
 import { formatDateVN, getRelativeDueLabel } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Avatar, ProgressBar } from '@/components/ui/cards';
+import { StatusBadge, type BadgeTone } from '@/components/ui/StatusBadge';
+import { RowMenu } from '@/components/ui/RowMenu';
 
 interface TaskKanbanViewProps {
   tasks: Task[];
@@ -21,12 +24,12 @@ interface TaskKanbanViewProps {
   isReadOnly?: boolean;
 }
 
-const COLUMNS: { id: TaskStatus; title: string; color: string }[] = [
-  { id: 'todo', title: 'Mới giao', color: '#64748B' },
-  { id: 'in_progress', title: 'Đang làm', color: '#F59E0B' },
-  { id: 'submitted', title: 'Chờ duyệt (100%)', color: '#6366F1' },
-  { id: 'approved', title: 'Đã nghiệm thu', color: '#10B981' },
-  { id: 'returned', title: 'Cần làm lại', color: '#EF4444' },
+const COLUMNS: { id: TaskStatus; title: string; color: string; tone: BadgeTone; barTone: 'pine' | 'gold' | 'rose' | 'navy' }[] = [
+  { id: 'todo', title: 'Mới giao', color: '#64748B', tone: 'slate', barTone: 'navy' },
+  { id: 'in_progress', title: 'Đang làm', color: '#C9A227', tone: 'gold', barTone: 'gold' },
+  { id: 'submitted', title: 'Chờ duyệt (100%)', color: '#6366F1', tone: 'violet', barTone: 'navy' },
+  { id: 'approved', title: 'Đã nghiệm thu', color: '#0E7C5B', tone: 'pine', barTone: 'pine' },
+  { id: 'returned', title: 'Cần làm lại', color: '#EF4444', tone: 'rose', barTone: 'rose' },
 ];
 
 export function TaskKanbanView({
@@ -91,17 +94,14 @@ export function TaskKanbanView({
             key={col.id}
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, col.id)}
-            className="flex flex-col rounded-2xl bg-slate-100/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 p-3 min-h-[500px]"
+            className="flex flex-col rounded-[20px] bg-cream-deep/50 dark:bg-night/50 border border-line dark:border-night-line p-3 min-h-[500px]"
           >
             {/* Column Header */}
-            <div className="flex items-center justify-between pb-3 mb-2 border-b border-slate-200 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: col.color }} />
-                <span className="font-bold text-xs text-slate-800 dark:text-slate-200">
-                  {col.title}
-                </span>
-              </div>
-              <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 font-bold text-slate-600 dark:text-slate-400">
+            <div className="flex items-center justify-between pb-3 mb-2">
+              <StatusBadge tone={col.tone} dot>
+                {col.title}
+              </StatusBadge>
+              <span className="text-[11px] font-tabular font-bold text-ink-soft dark:text-slate-400">
                 {columnTasks.length}
               </span>
             </div>
@@ -109,7 +109,7 @@ export function TaskKanbanView({
             {/* Task Cards */}
             <div className="space-y-3 flex-1 overflow-y-auto">
               {columnTasks.length === 0 ? (
-                <div className="h-32 flex items-center justify-center text-[11px] text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                <div className="h-32 flex items-center justify-center text-[11px] text-ink-soft dark:text-slate-500 border border-dashed border-line dark:border-night-line rounded-2xl bg-parchment/60 dark:bg-night-card/40 px-3 text-center">
                   Kéo thả nhiệm vụ vào đây
                 </div>
               ) : (
@@ -118,58 +118,67 @@ export function TaskKanbanView({
                   const isApproved = t.status === 'approved';
                   const dueInfo = getRelativeDueLabel(t.dueDate, isApproved);
 
+                  const menuItems = [
+                    ...(currentUser.role === 'admin' && t.status === 'submitted'
+                      ? [
+                          {
+                            label: 'Kiểm tra & Duyệt',
+                            icon: <ShieldCheck className="w-4 h-4" />,
+                            onClick: () => onOpenApproval(t),
+                          },
+                        ]
+                      : []),
+                    ...(currentUser.role === 'assignee' &&
+                    t.assigneeId === currentUser.id &&
+                    t.status !== 'approved'
+                      ? [
+                          {
+                            label: 'Báo cáo tiến độ',
+                            icon: <Edit3 className="w-4 h-4" />,
+                            onClick: () => onOpenUpdate(t),
+                          },
+                        ]
+                      : []),
+                  ];
+
                   return (
                     <div
                       key={t.id}
                       draggable={!isReadOnly && !isApproved}
                       onDragStart={(e) => handleDragStart(e, t.id)}
                       onClick={() => onSelectTask(t)}
-                      className={`p-3.5 rounded-xl bg-white dark:bg-slate-800 border transition-all cursor-pointer shadow-xs hover:shadow-md group relative ${
-                        t.status === 'approved'
-                          ? 'border-emerald-300 dark:border-emerald-800/60'
-                          : dueInfo.isOverdue
-                          ? 'border-rose-400 dark:border-rose-800'
-                          : 'border-slate-200 dark:border-slate-700 hover:border-amber-400'
+                      className={`card p-3.5 transition-all cursor-pointer hover:shadow-md group relative ${
+                        dueInfo.isOverdue && !isApproved ? 'border-rose-300 dark:border-rose-500/40' : ''
                       }`}
                     >
-                      {/* Priority and overdue flags */}
+                      {/* Meta row */}
                       <div className="flex items-center justify-between mb-2">
                         {dueInfo.isOverdue ? (
-                          <span className="px-2 py-0.5 rounded bg-rose-500/15 text-rose-600 dark:text-rose-400 text-[10px] font-bold flex items-center gap-1">
+                          <StatusBadge tone="rose">
                             <AlertTriangle className="w-3 h-3" />
                             {dueInfo.label}
-                          </span>
+                          </StatusBadge>
                         ) : (
-                          <span className="text-[10px] text-slate-400 flex items-center gap-1 font-mono">
+                          <span className="text-[10px] text-ink-soft dark:text-slate-400 flex items-center gap-1 font-tabular">
                             <Calendar className="w-3 h-3" />
                             {formatDateVN(t.dueDate)}
                           </span>
                         )}
-
-                        <span className="font-mono text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        <span className="font-tabular text-[11px] font-extrabold text-ink dark:text-slate-200">
                           {t.progress}%
                         </span>
                       </div>
 
-                      <h4 className="font-bold text-xs text-slate-900 dark:text-slate-100 group-hover:text-amber-500 transition-colors line-clamp-2 leading-snug">
+                      <h4 className="font-bold text-[13px] text-ink dark:text-white group-hover:text-pine-700 dark:group-hover:text-pine-500 transition-colors line-clamp-2 leading-snug">
                         {t.title}
                       </h4>
 
-                      {/* Progress bar */}
-                      <div className="mt-2.5 w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all"
-                          style={{
-                            width: `${t.progress}%`,
-                            backgroundColor: col.color,
-                          }}
-                        />
-                      </div>
+                      <ProgressBar value={t.progress} tone={col.barTone} h="h-1.5" className="mt-2.5" />
 
                       {/* Subtasks checklist counter */}
                       {t.subtasks && t.subtasks.length > 0 && (
-                        <div className="mt-2 flex items-center gap-1.5 text-[10px] text-slate-500 font-medium">
-                          <CheckSquare className="w-3 h-3 text-slate-400" />
+                        <div className="mt-2 flex items-center gap-1.5 text-[10px] text-ink-soft dark:text-slate-400 font-medium">
+                          <CheckSquare className="w-3 h-3" />
                           <span>
                             {t.subtasks.filter((st) => st.completed).length}/{t.subtasks.length} mục việc
                           </span>
@@ -188,51 +197,20 @@ export function TaskKanbanView({
 
                       {/* Return reason snippet if any */}
                       {t.status === 'returned' && t.returnReason && (
-                        <div className="mt-2 p-1.5 rounded bg-rose-50 dark:bg-rose-950/40 text-[10px] text-rose-600 dark:text-rose-400 line-clamp-2 italic">
+                        <div className="mt-2 p-2 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-[10px] text-rose-600 dark:text-rose-400 line-clamp-2 italic">
                           Lý do: {t.returnReason}
                         </div>
                       )}
 
-                      {/* Card Footer: Assignee & Quick Actions */}
-                      <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-5 h-5 rounded-md bg-amber-500/20 text-amber-500 font-bold text-[9px] flex items-center justify-center">
-                            {assignee?.avatar || 'CB'}
-                          </div>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[90px]">
+                      {/* Card Footer: Assignee & RowMenu */}
+                      <div className="mt-3 pt-2.5 border-t border-line dark:border-night-line flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Avatar text={assignee?.avatar || 'CB'} size="sm" />
+                          <span className="text-[10px] text-ink-soft dark:text-slate-400 truncate max-w-[90px]">
                             {assignee?.name.split(' ').pop()}
                           </span>
                         </div>
-
-                        {/* Interactive action pills */}
-                        <div
-                          className="flex items-center gap-1"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {currentUser.role === 'admin' && t.status === 'submitted' && (
-                            <button
-                              onClick={() => onOpenApproval(t)}
-                              title="Kiểm tra & Nghiệm thu"
-                              className="px-2 py-0.5 rounded bg-indigo-600 text-white text-[10px] font-bold hover:bg-indigo-500 transition-colors flex items-center gap-1"
-                            >
-                              <ShieldCheck className="w-3 h-3" />
-                              Duyệt
-                            </button>
-                          )}
-
-                          {currentUser.role === 'assignee' &&
-                            t.assigneeId === currentUser.id &&
-                            t.status !== 'approved' && (
-                              <button
-                                onClick={() => onOpenUpdate(t)}
-                                title="Cập nhật tiến độ & Tải ảnh"
-                                className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 text-[10px] font-bold hover:bg-amber-400 transition-colors flex items-center gap-1"
-                              >
-                                <Edit3 className="w-3 h-3" />
-                                Báo cáo
-                              </button>
-                            )}
-                        </div>
+                        {menuItems.length > 0 && <RowMenu items={menuItems} />}
                       </div>
                     </div>
                   );
@@ -245,4 +223,3 @@ export function TaskKanbanView({
     </div>
   );
 }
-

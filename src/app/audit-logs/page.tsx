@@ -2,8 +2,12 @@
 
 import React, { useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { Avatar, EmptyState } from '@/components/ui/cards';
 import { useConstructionStore } from '@/lib/store';
-import { Search } from 'lucide-react';
+import { History, Search, ShieldAlert } from 'lucide-react';
 import { formatDateTimeVN } from '@/lib/utils';
 
 export default function AuditLogsPage() {
@@ -18,13 +22,12 @@ export default function AuditLogsPage() {
   if (currentUser.role !== 'admin') {
     return (
       <AppShell>
-        <div className="py-20 text-center max-w-md mx-auto">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">
-            Không có quyền truy cập
-          </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Chỉ Quản trị viên (Thầy Trần Quốc Vương) mới có quyền kiểm tra nhật ký hoạt động hệ thống.
-          </p>
+        <div className="card max-w-md mx-auto">
+          <EmptyState
+            icon={<ShieldAlert className="w-6 h-6" />}
+            title="Không có quyền truy cập"
+            description="Chỉ Quản trị viên (Thầy Trần Quốc Vương) mới có quyền kiểm tra nhật ký hoạt động hệ thống."
+          />
         </div>
       </AppShell>
     );
@@ -45,50 +48,37 @@ export default function AuditLogsPage() {
 
   return (
     <AppShell>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-bold text-amber-500 uppercase tracking-wider">
-                Kiểm soát tuân thủ & An toàn
-              </span>
-            </div>
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              Nhật ký Hoạt động Công trình
-            </h1>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Ghi nhận mọi thao tác giao việc, nghiệm thu, chỉnh sửa và cấp quyền (bản demo: lưu trong trình duyệt)
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs px-3 py-1.5 rounded-xl bg-slate-900 text-white dark:bg-slate-800 font-mono font-bold border border-slate-700">
-              {auditLogs.length} bản ghi
-            </span>
-          </div>
-        </div>
+      <div>
+        <PageHeader
+          eyebrow="Kiểm soát tuân thủ & An toàn"
+          title="Nhật ký Hoạt động Công trình"
+          description="Ghi nhận mọi thao tác giao việc, nghiệm thu, chỉnh sửa và cấp quyền (bản demo: lưu trong trình duyệt)"
+        >
+          <StatusBadge tone="navy">
+            <History className="w-3.5 h-3.5" />
+            {auditLogs.length} bản ghi
+          </StatusBadge>
+        </PageHeader>
 
         {/* Filter bar */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+        <div className="card p-4 mb-5 flex flex-col xl:flex-row xl:items-center gap-3">
+          <div className="relative flex-1 min-w-52">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-soft pointer-events-none" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm theo người thực hiện, mục tiêu, chi tiết..."
-              className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-amber-500"
+              className="input !pl-10"
             />
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {/* User filter */}
+          <div className="w-full sm:w-60 shrink-0">
             <select
               value={selectedUserFilter}
               onChange={(e) => setSelectedUserFilter(e.target.value)}
               aria-label="Lọc theo người thao tác"
-              className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-medium focus:outline-none focus:border-amber-500"
+              className="input font-medium"
             >
               <option value="all">Tất cả người thực hiện</option>
               {users.map((u) => (
@@ -97,74 +87,68 @@ export default function AuditLogsPage() {
                 </option>
               ))}
             </select>
+          </div>
 
-            {/* Action filter */}
-            <select
+          <div className="overflow-x-auto shrink-0">
+            <SegmentedControl
+              size="sm"
               value={selectedActionFilter}
-              onChange={(e) => setSelectedActionFilter(e.target.value)}
-              aria-label="Lọc theo loại hành động"
-              className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-medium focus:outline-none focus:border-amber-500"
-            >
-              <option value="all">Tất cả hành động</option>
-              {allActions.map((action) => (
-                <option key={action} value={action}>
-                  {action}
-                </option>
-              ))}
-            </select>
+              onChange={setSelectedActionFilter}
+              options={[
+                { value: 'all', label: 'Tất cả hành động' },
+                ...allActions.map((action) => ({ value: action, label: action })),
+              ]}
+            />
           </div>
         </div>
 
         {/* Logs Table */}
-        <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
+        <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 uppercase tracking-wider font-semibold">
+            <table className="table-base">
+              <thead>
                 <tr>
-                  <th className="py-3.5 px-4">Thời gian</th>
-                  <th className="py-3.5 px-4">Người thực hiện</th>
-                  <th className="py-3.5 px-4">Hành động</th>
-                  <th className="py-3.5 px-4">Đối tượng tác động</th>
-                  <th className="py-3.5 px-4">Chi tiết ghi nhận</th>
+                  <th>Thời gian</th>
+                  <th>Người thực hiện</th>
+                  <th>Hành động</th>
+                  <th>Đối tượng tác động</th>
+                  <th>Chi tiết ghi nhận</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody>
                 {filteredLogs.map((log) => {
                   return (
-                    <tr
-                      key={log.id}
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
-                    >
-                      <td className="py-3.5 px-4 whitespace-nowrap font-mono text-slate-500 text-[11px]">
+                    <tr key={log.id}>
+                      <td className="whitespace-nowrap font-mono text-ink-soft text-xs">
                         {formatDateTimeVN(log.timestamp)}
                       </td>
 
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-md bg-amber-500/20 text-amber-500 font-bold text-[10px] flex items-center justify-center">
-                            {log.userName
+                      <td className="whitespace-nowrap">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar
+                            size="sm"
+                            tone="navy"
+                            text={log.userName
                               .split(' ')
                               .map((n) => n[0])
                               .slice(-2)
                               .join('')}
-                          </div>
-                          <span className="font-bold text-slate-800 dark:text-slate-200">
+                          />
+                          <span className="font-bold text-ink dark:text-slate-200">
                             {log.userName}
                           </span>
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-[10px] border border-slate-200 dark:border-slate-700">
-                          {log.action}
-                        </span>
+                      <td className="whitespace-nowrap">
+                        <StatusBadge tone="slate">{log.action}</StatusBadge>
                       </td>
 
-                      <td className="py-3.5 px-4 font-semibold text-slate-800 dark:text-slate-200 max-w-xs truncate">
+                      <td className="font-semibold text-ink dark:text-slate-200 max-w-xs truncate">
                         {log.target}
                       </td>
 
-                      <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 max-w-md">
+                      <td className="text-ink-soft dark:text-slate-400 max-w-md">
                         {log.details}
                       </td>
                     </tr>
@@ -173,9 +157,15 @@ export default function AuditLogsPage() {
               </tbody>
             </table>
           </div>
+          {filteredLogs.length === 0 && (
+            <EmptyState
+              icon={<History className="w-6 h-6" />}
+              title="Không có bản ghi phù hợp"
+              description="Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc đang chọn."
+            />
+          )}
         </div>
       </div>
     </AppShell>
   );
 }
-

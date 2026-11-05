@@ -20,7 +20,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [mobileMenuOpen]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F8F9FA] dark:bg-[#090D16] text-slate-800 dark:text-slate-100">
+    <div className="flex h-screen overflow-hidden bg-cream dark:bg-night text-ink dark:text-slate-100">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block shrink-0 no-print">
         <AppSidebar />

@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ArrowLeft, MessageSquare, ShieldCheck, User } from 'lucide-react';
+import { ArrowLeft, MessageSquare, User } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { ProjectChat } from '@/components/projects/ProjectChat';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Avatar, EmptyState } from '@/components/ui/cards';
+import { IconBtn } from '@/components/ui/RowMenu';
 import { useConstructionStore } from '@/lib/store';
 import { formatDateTimeVN } from '@/lib/utils';
 
@@ -103,37 +106,42 @@ export default function MessagesPage() {
     const last = msgs.length > 0 ? msgs[msgs.length - 1] : null;
     const unread = unreadCountFor(ch);
     const isActive = selectedChannelId === ch.id;
+    const otherUser = ch.kind === 'dm' ? users.find((u) => u.id === ch.otherUserId) : undefined;
 
     return (
       <button
         key={ch.id}
         type="button"
         onClick={() => handleSelectChannel(ch)}
-        className={`w-full text-left p-3.5 rounded-2xl border transition-all flex items-start gap-3 ${
+        className={`w-full text-left px-3.5 py-3 rounded-2xl transition-all flex items-start gap-3 cursor-pointer ${
           isActive
-            ? 'bg-amber-500/10 border-amber-500/50'
-            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-amber-400'
+            ? 'bg-pine-100 dark:bg-navy-800 shadow-xs'
+            : 'hover:bg-cream dark:hover:bg-night-line/60'
         }`}
       >
-        <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-          {ch.kind === 'dm' ? <ShieldCheck className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <span className="font-bold text-xs text-slate-900 dark:text-slate-100 truncate">
+        {ch.kind === 'dm' ? (
+          <Avatar text={otherUser?.avatar || ch.otherUserName.slice(0, 2)} size="md" tone="navy" />
+        ) : (
+          <span className="w-10 h-10 rounded-full bg-navy-100 text-navy-800 dark:bg-navy-700/40 dark:text-navy-100 flex items-center justify-center shrink-0">
+            <MessageSquare className="w-4 h-4" />
+          </span>
+        )}
+        <span className="min-w-0 flex-1 block">
+          <span className="flex items-center justify-between gap-2">
+            <span className="font-bold text-[13px] text-ink dark:text-slate-100 truncate">
               {ch.title}
             </span>
             {last && (
-              <span className="text-[10px] text-slate-400 font-mono shrink-0">
+              <span className="text-[10px] text-ink-soft font-mono shrink-0">
                 {formatDateTimeVN(last.createdAt)}
               </span>
             )}
-          </div>
-          <div className="text-[11px] text-slate-400 truncate">{ch.subtitle}</div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+          </span>
+          <span className="block text-[11px] text-ink-soft truncate">{ch.subtitle}</span>
+          <span className="block text-[11px] text-ink-soft dark:text-slate-400 truncate mt-0.5">
             {last ? last.content : 'Chưa có tin nhắn nào'}
-          </div>
-        </div>
+          </span>
+        </span>
         {unread > 0 && (
           <span className="shrink-0 min-w-5 h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
             {unread}
@@ -145,42 +153,40 @@ export default function MessagesPage() {
 
   return (
     <AppShell>
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-            Trao đổi
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Trò chuyện trực tiếp với Admin và trao đổi theo từng dự án bạn được xem
-          </p>
-        </div>
+      <div>
+        <PageHeader
+          eyebrow="Trao đổi"
+          title="Trao đổi"
+          description="Trò chuyện trực tiếp với Admin và trao đổi theo từng dự án bạn được xem"
+        />
 
-        <div className="flex gap-4 items-start">
+        {/* App chat 2 cột trong 1 card lớn */}
+        <div className="card overflow-hidden flex items-stretch">
           {/* Danh sách kênh — mobile: ẩn khi đã mở 1 kênh */}
           <div
-            className={`w-full md:w-80 shrink-0 space-y-4 ${
+            className={`w-full md:w-80 shrink-0 md:border-r border-line dark:border-night-line p-3 space-y-5 overflow-y-auto ${
               selectedChannel ? 'hidden md:block' : 'block'
             }`}
           >
-            <div className="space-y-2">
-              <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <div className="space-y-1.5">
+              <h3 className="eyebrow flex items-center gap-1.5 px-1.5 pt-1">
                 <User className="w-3.5 h-3.5" />
                 {currentUser.role === 'admin' ? 'Trò chuyện trực tiếp' : 'Trò chuyện trực tiếp với Admin'}
               </h3>
               {dmChannels.length === 0 ? (
-                <p className="text-xs text-slate-400">Không có người dùng nào để trò chuyện.</p>
+                <p className="text-xs text-ink-soft px-1.5">Không có người dùng nào để trò chuyện.</p>
               ) : (
                 dmChannels.map(renderChannelItem)
               )}
             </div>
 
-            <div className="space-y-2">
-              <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <div className="space-y-1.5">
+              <h3 className="eyebrow flex items-center gap-1.5 px-1.5">
                 <MessageSquare className="w-3.5 h-3.5" />
                 Trao đổi theo dự án ({projectChannels.length})
               </h3>
               {projectChannels.length === 0 ? (
-                <p className="text-xs text-slate-400">Bạn chưa được cấp quyền xem dự án nào.</p>
+                <p className="text-xs text-ink-soft px-1.5">Bạn chưa được cấp quyền xem dự án nào.</p>
               ) : (
                 projectChannels.map(renderChannelItem)
               )}
@@ -188,32 +194,34 @@ export default function MessagesPage() {
           </div>
 
           {/* Khung chat chính — mobile: chỉ hiện khi đã chọn kênh */}
-          <div className={`flex-1 min-w-0 ${selectedChannel ? 'block' : 'hidden md:block'}`}>
+          <div className={`flex-1 min-w-0 flex flex-col ${selectedChannel ? 'flex' : 'hidden md:flex'}`}>
             {selectedChannel ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedChannelId(null)}
-                    className="md:hidden p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
-                    aria-label="Quay lại danh sách kênh"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                  </button>
+              <>
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-line dark:border-night-line shrink-0">
+                  <span className="md:hidden">
+                    <IconBtn label="Quay lại danh sách kênh" onClick={() => setSelectedChannelId(null)}>
+                      <ArrowLeft className="w-4 h-4" />
+                    </IconBtn>
+                  </span>
                   <div className="min-w-0">
-                    <h2 className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                    <h2 className="font-bold text-sm text-ink dark:text-white truncate">
                       {selectedChannel.title}
                     </h2>
-                    <p className="text-[11px] text-slate-400 truncate">{selectedChannel.subtitle}</p>
+                    <p className="text-[11px] text-ink-soft truncate">{selectedChannel.subtitle}</p>
                   </div>
                 </div>
                 {/* ProjectChat lọc tin theo projectId — kênh DM dùng id 'direct-<idA>-<idB>' làm projectId */}
-                <ProjectChat projectId={selectedChannel.id} />
-              </div>
+                <div className="[&>div]:!rounded-none [&>div]:!border-0 [&>div]:!shadow-none">
+                  <ProjectChat projectId={selectedChannel.id} />
+                </div>
+              </>
             ) : (
-              <div className="h-[580px] rounded-3xl bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-center text-xs text-slate-400 px-6">
-                <MessageSquare className="w-8 h-8 text-slate-300 dark:text-slate-600 mb-3" />
-                <p>Chọn một cuộc trò chuyện ở danh sách bên trái để bắt đầu trao đổi.</p>
+              <div className="flex-1 min-h-[580px] flex items-center justify-center">
+                <EmptyState
+                  icon={<MessageSquare className="w-6 h-6" />}
+                  title="Chưa chọn cuộc trò chuyện"
+                  description="Chọn một cuộc trò chuyện ở danh sách bên trái để bắt đầu trao đổi."
+                />
               </div>
             )}
           </div>

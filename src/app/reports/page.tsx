@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { RowMenu } from '@/components/ui/RowMenu';
 import { useConstructionStore } from '@/lib/store';
 import { Printer, Sparkles } from 'lucide-react';
 import { formatDateVN, formatCurrencyVN } from '@/lib/utils';
@@ -84,57 +86,51 @@ export default function ReportsPage() {
     <AppShell>
       <div className="space-y-6">
         {/* Screen Toolbar (hidden in print) */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-print">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-bold text-amber-500 uppercase tracking-wider">
-                Báo cáo & Đánh giá
-              </span>
+        <div className="no-print">
+          <PageHeader
+            eyebrow="Báo cáo & Đánh giá"
+            title="Báo cáo Tiến độ Kế hoạch & Kinh phí Dự án"
+            description="Xuất biên bản tổng hợp tiến độ, phân kỳ kinh phí và xử lý phát sinh để trình Ban Giám hiệu và Hội đồng Lãnh đạo"
+          >
+            <div className="w-64 max-w-full">
+              <select
+                value={activeSelectedId}
+                onChange={(e) => setSelectedProjectId(e.target.value)}
+                aria-label="Chọn kế hoạch để xuất báo cáo"
+                className="input font-semibold"
+              >
+                {visibleProjects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.code} - {p.name}
+                  </option>
+                ))}
+              </select>
             </div>
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              Báo cáo Tiến độ Kế hoạch & Kinh phí Dự án
-            </h1>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Xuất biên bản tổng hợp tiến độ, phân kỳ kinh phí và xử lý phát sinh để trình Ban Giám hiệu và Hội đồng Lãnh đạo
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <select
-              value={activeSelectedId}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
-              aria-label="Chọn kế hoạch để xuất báo cáo"
-              className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold focus:outline-none focus:border-amber-500"
-            >
-              {visibleProjects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.code} - {p.name}
-                </option>
-              ))}
-            </select>
-
-            <button
-              onClick={handlePrint}
-              className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
-            >
-              <Printer className="w-4 h-4" />
-              <span>Xuất PDF / In báo cáo</span>
-            </button>
-          </div>
+            <RowMenu
+              label="Xuất báo cáo"
+              items={[
+                {
+                  label: 'In / Xuất PDF',
+                  icon: <Printer className="w-4 h-4" />,
+                  onClick: handlePrint,
+                },
+              ]}
+            />
+          </PageHeader>
         </div>
 
         {/* Printable Document Sheet */}
         {!project ? (
-          <div className="py-20 text-center max-w-md mx-auto p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">
+          <div className="card py-20 text-center max-w-md mx-auto p-8">
+            <h2 className="text-lg font-bold text-ink dark:text-slate-200">
               Không có dự án nào khả dụng
             </h2>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-ink-soft mt-1">
               Tài khoản hiện tại ({currentUser.name}) chưa được cấp quyền giám sát dự án nào để xuất báo cáo.
             </p>
           </div>
         ) : (
-          <div className="bg-white text-slate-900 rounded-3xl p-6 sm:p-10 shadow-lg border border-slate-200 print-card max-w-4xl mx-auto">
+          <div className="card bg-white text-slate-900 p-6 sm:p-10 print-card max-w-4xl mx-auto">
             {/* Header Form / Quốc hiệu & Tiêu ngữ */}
             <div className="flex flex-col sm:flex-row justify-between items-start border-b-2 border-slate-900 pb-6 mb-6 gap-4">
               <div>
@@ -168,7 +164,7 @@ export default function ReportsPage() {
               <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-900">
                 BÁO CÁO TIẾN ĐỘ THỰC HIỆN, KINH PHÍ & XỬ LÝ PHÁT SINH
               </h2>
-              <p className="text-sm font-bold text-amber-600 mt-1">
+              <p className="text-sm font-bold text-gold-600 mt-1">
                 Kế hoạch: {project.name}
               </p>
               <div className="flex items-center justify-center gap-2 mt-1">
@@ -197,14 +193,14 @@ export default function ReportsPage() {
                 <div className="font-mono">
                   {formatDateVN(project.startDate)} - {formatDateVN(project.endDate)}
                 </div>
-                <div className="text-amber-600 font-mono text-base">{progress}%</div>
+                <div className="text-gold-600 font-mono text-base">{progress}%</div>
               </div>
             </div>
 
             {/* Directive snippet if exists */}
             {project.directive && (
-              <div className="mb-6 p-4 rounded-xl border border-amber-300 bg-amber-50/60 text-xs">
-                <div className="font-bold text-amber-800 flex items-center gap-1.5 mb-1">
+              <div className="mb-6 p-4 rounded-xl border border-gold-500/40 bg-gold-100/50 text-xs">
+                <div className="font-bold text-gold-600 flex items-center gap-1.5 mb-1">
                   <Sparkles className="w-3.5 h-3.5" />
                   Ý kiến chỉ đạo của Lãnh đạo ({project.directive.authorName} - {project.directive.authorTitle}):
                 </div>
@@ -218,7 +214,7 @@ export default function ReportsPage() {
                 I. Danh mục chi tiết các mục tiêu & sản phẩm bàn giao ({projectTasks.length} nhiệm vụ)
               </h3>
               <div className="border border-slate-300 rounded-xl overflow-hidden">
-                <table className="w-full text-left text-xs">
+                <table className="table-base">
                   <thead className="bg-slate-100 border-b border-slate-300 text-slate-700 font-bold uppercase text-[10px]">
                     <tr>
                       <th className="py-2.5 px-3 w-10 text-center">STT</th>
@@ -266,7 +262,7 @@ export default function ReportsPage() {
                   II. Tiến độ giải ngân kinh phí theo các đợt ({milestones.length} đợt)
                 </h3>
                 <div className="border border-slate-300 rounded-xl overflow-hidden">
-                  <table className="w-full text-left text-xs">
+                  <table className="table-base">
                     <thead className="bg-slate-100 border-b border-slate-300 text-slate-700 font-bold uppercase text-[10px]">
                       <tr>
                         <th className="py-2.5 px-3">Đợt nộp & Nội dung chi</th>
@@ -326,7 +322,7 @@ export default function ReportsPage() {
                   III. Tổng hợp các mục phát sinh & Trở ngại hiện trường ({projectIncidents.length} mục)
                 </h3>
                 <div className="border border-slate-300 rounded-xl overflow-hidden">
-                  <table className="w-full text-left text-xs">
+                  <table className="table-base">
                     <thead className="bg-slate-100 border-b border-slate-300 text-slate-700 font-bold uppercase text-[10px]">
                       <tr>
                         <th className="py-2.5 px-3">Nội dung phát sinh & Nguyên nhân</th>
@@ -432,7 +428,7 @@ export default function ReportsPage() {
                 <div className="font-bold uppercase text-slate-800">CHỦ TRÌ DỰ ÁN DUYỆT</div>
                 <div className="text-[10px] text-slate-400 italic mt-0.5">(Ký, xác nhận kết quả)</div>
                 {allTasksApproved ? (
-                  <div className="h-16 flex items-center justify-center font-serif text-emerald-700 italic font-bold text-base">
+                  <div className="h-16 flex items-center justify-center font-serif text-pine-700 italic font-bold text-base">
                     [ĐÃ DUYỆT ĐẠT]
                   </div>
                 ) : (

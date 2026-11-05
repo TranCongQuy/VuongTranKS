@@ -4,7 +4,6 @@ import React, { useState, useRef } from 'react';
 import { Task, Attachment, IncidentSeverity } from '@/lib/types';
 import { useConstructionStore } from '@/lib/store';
 import {
-  X,
   Camera,
   UploadCloud,
   CheckCircle2,
@@ -15,6 +14,10 @@ import {
   Send,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Modal } from '@/components/ui/Modal';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { Switch } from '@/components/ui/Switch';
+import { IconBtn } from '@/components/ui/RowMenu';
 
 interface TaskUpdateModalProps {
   task: Task | null;
@@ -192,368 +195,322 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
     }, 350);
   };
 
+  const footer = (
+    <>
+      <button type="button" onClick={onClose} className="btn-ghost">
+        Đóng
+      </button>
+      {!isLocked && (
+        <button
+          type="submit"
+          form="update-form"
+          disabled={isSubmitting}
+          className="btn-primary"
+        >
+          <Send className="w-4 h-4" />
+          <span>Gửi báo cáo tiến độ</span>
+        </button>
+      )}
+    </>
+  );
+
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Cập nhật tiến độ & Minh chứng hiện trường"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150"
+    <Modal
+      open
+      onClose={onClose}
+      title="Báo cáo tiến độ & Minh chứng"
+      subtitle={task.title}
+      footer={footer}
+      size="lg"
     >
-      <div className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden max-h-[92vh] flex flex-col">
-        {/* Header */}
-        <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50">
-          <div>
-            <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <span>Báo cáo tiến độ & Minh chứng</span>
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-md mt-0.5">
-              {task.title}
+      <div className="space-y-5">
+        {/* Locked state warning */}
+        {isLocked && (
+          <div className="p-4 rounded-2xl bg-pine-100/60 dark:bg-pine-600/10 border border-pine-500/30 text-pine-700 dark:text-pine-500 text-[13px] flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 shrink-0" />
+            <div>
+              <strong className="block font-bold">Nhiệm vụ này đã được nghiệm thu</strong>
+              Hạng mục đã đạt 100% nghiệm thu kỹ thuật và được khóa chỉnh sửa.
+            </div>
+          </div>
+        )}
+
+        {/* Returned notice if any */}
+        {task.status === 'returned' && task.returnReason && (
+          <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-800 dark:text-rose-300 text-[13px] space-y-1">
+            <div className="font-bold flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
+              <AlertTriangle className="w-4 h-4" />
+              Yêu cầu chỉnh sửa từ Chỉ huy trưởng:
+            </div>
+            <p className="italic bg-parchment/70 dark:bg-night-card/60 p-2.5 rounded-xl border border-rose-200 dark:border-rose-500/20">
+              &ldquo;{task.returnReason}&rdquo;
             </p>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Đóng biểu mẫu cập nhật"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        )}
 
-        {/* Content */}
-        <div className="p-6 overflow-y-auto space-y-5 flex-1">
-          {/* Locked state warning */}
-          {isLocked && (
-            <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-              <div>
-                <strong className="block font-bold">Nhiệm vụ này đã được nghiệm thu</strong>
-                Hạng mục đã đạt 100% nghiệm thu kỹ thuật và được khóa chỉnh sửa.
+        {errorMessage && (
+          <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {!isLocked && (
+          <form onSubmit={handleSubmit} id="update-form" className="space-y-5">
+            {/* Progress Slider */}
+            <div className="p-4 rounded-2xl bg-cream dark:bg-night-line/40 border border-line dark:border-night-line space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="lbl mb-0">
+                  Mức độ hoàn thành thực tế
+                </label>
+                <span className="font-tabular text-xl font-black text-pine-700 dark:text-pine-500">
+                  {progress}%
+                </span>
               </div>
-            </div>
-          )}
 
-          {/* Returned notice if any */}
-          {task.status === 'returned' && task.returnReason && (
-            <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-900 text-rose-800 dark:text-rose-300 text-xs space-y-1">
-              <div className="font-bold flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
-                <AlertTriangle className="w-4 h-4" />
-                Yêu cầu chỉnh sửa từ Chỉ huy trưởng:
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={progress}
+                onChange={(e) => setProgress(Number(e.target.value))}
+                className="w-full h-2.5 bg-cream-deep dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-pine-600"
+              />
+
+              {/* Quick milestones — SegmentedControl thay hàng nút rời */}
+              <SegmentedControl
+                value={String(progress)}
+                onChange={(v) => handleMilestoneClick(Number(v))}
+                size="sm"
+                options={[
+                  { value: '25', label: '25%' },
+                  { value: '50', label: '50%' },
+                  { value: '75', label: '75%' },
+                  { value: '100', label: '100% Nghiệm thu' },
+                ]}
+              />
+
+              {progress === 100 && (
+                <p className="text-[11px] text-navy-700 dark:text-navy-100 font-medium">
+                  Báo 100% sẽ tự động chuyển nhiệm vụ sang trạng thái <strong>Chờ duyệt</strong> và gửi thông báo cho Thầy Vương.
+                </p>
+              )}
+            </div>
+
+            {/* Note */}
+            <div>
+              <label className="lbl">
+                Ghi chú nhật ký hiện trường *
+              </label>
+              <textarea
+                required
+                rows={3}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Mô tả cụ thể khối lượng đã làm hôm nay, chủng loại vật tư, kết quả đo đạc..."
+                className="input text-[13px]"
+              />
+            </div>
+
+            {/* Mục phát sinh / Sự cố hiện trường (Incident Reporting) */}
+            <div className="p-4 rounded-2xl border border-gold-500/30 bg-gold-100/40 dark:bg-gold-500/5 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[13px] font-bold text-ink dark:text-slate-200 flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-gold-600 dark:text-gold-400" />
+                  Ghi nhận mục phát sinh / Trở ngại thi công (thời tiết, chậm tiến độ,...)
+                </span>
+                <Switch
+                  checked={hasIncident}
+                  onChange={(v) => setHasIncident(v)}
+                  label="Ghi nhận mục phát sinh"
+                />
               </div>
-              <p className="italic bg-white/60 dark:bg-slate-900/60 p-2.5 rounded-xl border border-rose-200 dark:border-rose-900/50">
-                &ldquo;{task.returnReason}&rdquo;
-              </p>
-            </div>
-          )}
+              {hasIncident && (
+                <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-bold bg-gold-100 text-gold-600 dark:bg-gold-500/15 dark:text-gold-400">
+                  Báo cáo phát sinh
+                </span>
+              )}
 
-          {errorMessage && (
-            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{errorMessage}</span>
-            </div>
-          )}
+              {hasIncident && (
+                <div className="space-y-3 pt-3 border-t border-gold-500/20 text-[13px]">
+                  <div>
+                    <label className="lbl">Tiêu đề mục phát sinh *</label>
+                    <input
+                      type="text"
+                      required={hasIncident}
+                      value={incidentTitle}
+                      onChange={(e) => setIncidentTitle(e.target.value)}
+                      placeholder="Ví dụ: Mưa lớn ngập góc sân; Chậm giao ống D200; Địa chất yếu..."
+                      className="input"
+                    />
+                  </div>
 
-          {!isLocked && (
-            <form onSubmit={handleSubmit} id="update-form" className="space-y-5">
-              {/* Progress Slider */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                    Mức độ hoàn thành thực tế:
-                  </label>
-                  <span className="font-tabular text-xl font-black text-amber-500">
-                    {progress}%
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="lbl">Phân loại trở ngại</label>
+                      <select
+                        value={incidentType}
+                        onChange={(e) =>
+                          setIncidentType(
+                            e.target.value as 'weather' | 'material' | 'technical' | 'site' | 'other'
+                          )
+                        }
+                        className="input"
+                      >
+                        <option value="weather">Thời tiết / Mưa bão</option>
+                        <option value="material">Chậm vật tư / Thiết bị</option>
+                        <option value="technical">Kỹ thuật / Địa chất</option>
+                        <option value="site">Mặt bằng / Hiện trường</option>
+                        <option value="other">Phát sinh khác</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="lbl">Mức độ ảnh hưởng</label>
+                      <select
+                        value={incidentSeverity}
+                        onChange={(e) => setIncidentSeverity(e.target.value as IncidentSeverity)}
+                        className="input"
+                      >
+                        <option value="low">Nhẹ (Theo dõi thêm)</option>
+                        <option value="medium">Trung bình</option>
+                        <option value="high">Nghiêm trọng (Chậm tiến độ)</option>
+                        <option value="critical">Rất khẩn cấp (Ngừng thi công)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="lbl">Mô tả chi tiết nguyên nhân</label>
+                    <textarea
+                      rows={2}
+                      value={incidentDescription}
+                      onChange={(e) => setIncidentDescription(e.target.value)}
+                      placeholder="Mô tả cụ thể trở ngại hiện trường (ví dụ: mưa dầm 3 ngày liên tiếp khiến hố ga bị đọng nước)..."
+                      className="input"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="lbl">Phương án khắc phục đề xuất</label>
+                    <textarea
+                      rows={2}
+                      value={incidentSolution}
+                      onChange={(e) => setIncidentSolution(e.target.value)}
+                      placeholder="Ví dụ: Đã bố trí máy bơm rút nước, đề xuất bổ sung thêm đá dăm 1x2 để đầm nén lại..."
+                      className="input"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Attachments Upload Section */}
+            <div>
+              <label className="lbl">
+                Đính kèm ảnh / video minh chứng (Tối đa 1,5MB/tệp — demo, video ≤ 10 phút)
+              </label>
+
+              {/* Hidden File Inputs */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,video/*"
+                onChange={handleFilesSelected}
+                className="hidden"
+              />
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*,video/*"
+                capture="environment"
+                onChange={handleFilesSelected}
+                className="hidden"
+              />
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-4 rounded-2xl border-2 border-dashed border-line dark:border-night-line hover:border-pine-500 bg-cream dark:bg-night-line/30 text-center transition-colors flex flex-col items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <UploadCloud className="w-5 h-5 text-pine-600" />
+                  <span className="text-xs font-bold text-ink dark:text-slate-300">
+                    Chọn ảnh / video
+                  </span>
+                  <span className="text-[10px] text-ink-soft dark:text-slate-400">Từ máy tính / thư viện</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="p-4 rounded-2xl border-2 border-dashed border-gold-500/60 bg-gold-100/50 dark:bg-gold-500/10 hover:bg-gold-100 text-center transition-colors flex flex-col items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Camera className="w-5 h-5 text-gold-600 dark:text-gold-400" />
+                  <span className="text-xs font-bold text-gold-600 dark:text-gold-400">
+                    Chụp / Quay trực tiếp
+                  </span>
+                  <span className="text-[10px] text-gold-600/80 dark:text-gold-400/80">Camera công trường</span>
+                </button>
+              </div>
+
+              {/* Trạng thái đọc tệp thật (FileReader) — không dùng % giả */}
+              {isProcessingFiles && (
+                <div className="mt-3 p-3 rounded-xl bg-cream-deep dark:bg-night-line/50 border border-line dark:border-night-line">
+                  <span className="text-xs font-semibold text-ink dark:text-slate-300">
+                    Đang xử lý tệp...
                   </span>
                 </div>
+              )}
 
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="5"
-                  value={progress}
-                  onChange={(e) => setProgress(Number(e.target.value))}
-                  className="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                />
-
-                {/* Quick milestone pills */}
-                <div className="flex items-center justify-between pt-1">
-                  {[25, 50, 75, 100].map((milestone) => (
-                    <button
-                      key={milestone}
-                      type="button"
-                      onClick={() => handleMilestoneClick(milestone)}
-                      className={`px-3 py-1 rounded-xl text-xs font-mono font-bold transition-all ${
-                        progress === milestone
-                          ? 'bg-amber-500 text-slate-950 shadow-sm'
-                          : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-amber-400'
-                      }`}
-                    >
-                      {milestone}% {milestone === 100 ? '⭐ Nghiệm thu' : ''}
-                    </button>
-                  ))}
-                </div>
-
-                {progress === 100 && (
-                  <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">
-                    ⚡ Báo 100% sẽ tự động chuyển nhiệm vụ sang trạng thái <strong>Chờ duyệt</strong> và gửi thông báo cho Thầy Vương.
-                  </p>
-                )}
-              </div>
-
-              {/* Note */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
-                  Ghi chú nhật ký hiện trường *
-                </label>
-                <textarea
-                  required
-                  rows={3}
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="Mô tả cụ thể khối lượng đã làm hôm nay, chủng loại vật tư, kết quả đo đạc..."
-                  className="w-full p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-amber-500"
-                />
-              </div>
-
-              {/* Mục phát sinh / Sự cố hiện trường (Incident Reporting) */}
-              <div className="p-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={hasIncident}
-                      onChange={(e) => setHasIncident(e.target.checked)}
-                      className="rounded border-slate-300 text-amber-500 focus:ring-amber-500 w-4 h-4"
-                    />
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                      <AlertTriangle className="w-4 h-4 text-amber-500" />
-                      Ghi nhận mục phát sinh / Trở ngại thi công (thời tiết, chậm tiến độ,...)
-                    </span>
-                  </label>
-                  {hasIncident && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400">
-                      Báo cáo phát sinh
-                    </span>
-                  )}
-                </div>
-
-                {hasIncident && (
-                  <div className="space-y-3 pt-2 border-t border-amber-500/20 text-xs">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        Tiêu đề mục phát sinh *
-                      </label>
-                      <input
-                        type="text"
-                        required={hasIncident}
-                        value={incidentTitle}
-                        onChange={(e) => setIncidentTitle(e.target.value)}
-                        placeholder="Ví dụ: Mưa lớn ngập góc sân; Chậm giao ống D200; Địa chất yếu..."
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                          Phân loại trở ngại
-                        </label>
-                        <select
-                          value={incidentType}
-                          onChange={(e) =>
-                            setIncidentType(
-                              e.target.value as 'weather' | 'material' | 'technical' | 'site' | 'other'
-                            )
-                          }
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
-                        >
-                          <option value="weather">Thời tiết / Mưa bão</option>
-                          <option value="material">Chậm vật tư / Thiết bị</option>
-                          <option value="technical">Kỹ thuật / Địa chất</option>
-                          <option value="site">Mặt bằng / Hiện trường</option>
-                          <option value="other">Phát sinh khác</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                          Mức độ ảnh hưởng
-                        </label>
-                        <select
-                          value={incidentSeverity}
-                          onChange={(e) => setIncidentSeverity(e.target.value as IncidentSeverity)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
-                        >
-                          <option value="low">Nhẹ (Theo dõi thêm)</option>
-                          <option value="medium">Trung bình</option>
-                          <option value="high">Nghiêm trọng (Chậm tiến độ)</option>
-                          <option value="critical">Rất khẩn cấp (Ngừng thi công)</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        Mô tả chi tiết nguyên nhân
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={incidentDescription}
-                        onChange={(e) => setIncidentDescription(e.target.value)}
-                        placeholder="Mô tả cụ thể trở ngại hiện trường (ví dụ: mưa dầm 3 ngày liên tiếp khiến hố ga bị đọng nước)..."
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        Phương án khắc phục đề xuất
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={incidentSolution}
-                        onChange={(e) => setIncidentSolution(e.target.value)}
-                        placeholder="Ví dụ: Đã bố trí máy bơm rút nước, đề xuất bổ sung thêm đá dăm 1x2 để đầm nén lại..."
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Attachments Upload Section */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
-                  Đính kèm ảnh / video minh chứng (Tối đa 1,5MB/tệp — demo, video ≤ 10 phút)
-                </label>
-
-                {/* Hidden File Inputs */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*,video/*"
-                  onChange={handleFilesSelected}
-                  className="hidden"
-                />
-                <input
-                  ref={cameraInputRef}
-                  type="file"
-                  accept="image/*,video/*"
-                  capture="environment"
-                  onChange={handleFilesSelected}
-                  className="hidden"
-                />
-
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-3.5 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-amber-500 dark:hover:border-amber-400 bg-slate-50 dark:bg-slate-800/40 text-center transition-colors flex flex-col items-center justify-center gap-1.5"
-                  >
-                    <UploadCloud className="w-5 h-5 text-amber-500" />
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                      Chọn ảnh / video
-                    </span>
-                    <span className="text-[10px] text-slate-400">Từ máy tính / thư viện</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => cameraInputRef.current?.click()}
-                    className="p-3.5 rounded-2xl border-2 border-dashed border-amber-400/80 bg-amber-500/10 hover:bg-amber-500/15 text-center transition-colors flex flex-col items-center justify-center gap-1.5"
-                  >
-                    <Camera className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                    <span className="text-xs font-bold text-amber-700 dark:text-amber-300">
-                      Chụp / Quay trực tiếp
-                    </span>
-                    <span className="text-[10px] text-amber-600/80">Camera công trường</span>
-                  </button>
-                </div>
-
-                {/* Trạng thái đọc tệp thật (FileReader) — không dùng % giả */}
-                {isProcessingFiles && (
-                  <div className="mt-3 p-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      Đang xử lý tệp...
-                    </span>
-                  </div>
-                )}
-
-                {/* Preview Selected Attachments */}
-                {attachments.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                      Minh chứng chuẩn bị gửi ({attachments.length})
-                    </span>
-                    <div className="grid grid-cols-2 gap-2">
-                      {attachments.map((att) => (
-                        <div
-                          key={att.id}
-                          className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 p-2 bg-slate-50 dark:bg-slate-800/80 flex items-center justify-between gap-2"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            {att.type === 'video' ? (
-                              <Film className="w-4 h-4 text-amber-500 shrink-0" />
-                            ) : (
-                              <ImageIcon className="w-4 h-4 text-sky-500 shrink-0" />
-                            )}
-                            <div className="min-w-0">
-                              <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">
-                                {att.name}
-                              </p>
-                              <span className="text-[10px] text-slate-400 font-mono">
-                                {att.size > 1024 * 1024
-                                  ? `${(att.size / (1024 * 1024)).toFixed(1)} MB`
-                                  : `${(att.size / 1024).toFixed(0)} KB`}{' '}
-                                {att.duration
-                                  ? `• ${Math.floor(att.duration / 60)}:${(att.duration % 60)
-                                      .toString()
-                                      .padStart(2, '0')}`
-                                  : ''}
-                              </span>
-                            </div>
+              {/* Preview Selected Attachments */}
+              {attachments.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <span className="lbl">
+                    Minh chứng chuẩn bị gửi ({attachments.length})
+                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {attachments.map((att) => (
+                      <div
+                        key={att.id}
+                        className="relative rounded-xl overflow-hidden border border-line dark:border-night-line p-2.5 bg-cream dark:bg-night-line/30 flex items-center justify-between gap-2"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {att.type === 'video' ? (
+                            <Film className="w-4 h-4 text-gold-600 dark:text-gold-400 shrink-0" />
+                          ) : (
+                            <ImageIcon className="w-4 h-4 text-sky-500 shrink-0" />
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium text-ink dark:text-slate-200 truncate">
+                              {att.name}
+                            </p>
+                            <span className="text-[10px] text-ink-soft dark:text-slate-400 font-tabular">
+                              {att.size > 1024 * 1024
+                                ? `${(att.size / (1024 * 1024)).toFixed(1)} MB`
+                                : `${(att.size / 1024).toFixed(0)} KB`}{' '}
+                              {att.duration
+                                ? `• ${Math.floor(att.duration / 60)}:${(att.duration % 60)
+                                    .toString()
+                                    .padStart(2, '0')}`
+                                : ''}
+                            </span>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveAttachment(att.id)}
-                            className="p-1 rounded-lg text-slate-400 hover:text-rose-500 transition-colors shrink-0"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
                         </div>
-                      ))}
-                    </div>
+                        <IconBtn label={`Xoá ${att.name}`} onClick={() => handleRemoveAttachment(att.id)}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </IconBtn>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
-            </form>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-medium"
-          >
-            Đóng
-          </button>
-          {!isLocked && (
-            <button
-              type="submit"
-              form="update-form"
-              disabled={isSubmitting}
-              className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
-            >
-              <Send className="w-4 h-4" />
-              <span>Gửi báo cáo tiến độ</span>
-            </button>
-          )}
-        </div>
+                </div>
+              )}
+            </div>
+          </form>
+        )}
       </div>
-    </div>
+    </Modal>
   );
 }
-

@@ -8,13 +8,13 @@ import {
   ShieldCheck,
   Eye,
   KeyRound,
-  ArrowRight,
+  ChevronRight,
   Lock,
   Building2,
   AlertCircle,
-  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Avatar } from '@/components/ui/cards';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -81,167 +81,185 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B132B] flex flex-col justify-center items-center p-4 relative overflow-hidden select-none">
-      {/* Background Architectural Grid Pattern */}
-      <div className="absolute inset-0 opacity-15 pointer-events-none">
-        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="loginGrid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#38BDF8" strokeWidth="0.8" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#loginGrid)" />
-        </svg>
-      </div>
-
-      {/* Ambient Glows */}
-      <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
-
-      <div className="w-full max-w-md relative z-10">
-        {/* Brand Header */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 text-slate-950 shadow-xl shadow-amber-500/20 mb-3">
-            <HardHat className="w-8 h-8 stroke-[2.2]" />
+    <div className="min-h-screen bg-cream dark:bg-night flex flex-col lg:grid lg:grid-cols-[1.05fr_1fr] select-none">
+      {/* Cột trái — panel thương hiệu (mobile: header gọn phía trên) */}
+      <aside className="relative overflow-hidden bg-navy-900 text-white px-6 py-6 sm:px-8 lg:px-12 lg:py-10 flex flex-col">
+        <div className="safety-stripe-accent absolute inset-x-0 top-0 h-1.5" />
+        <div className="flex items-center gap-3 lg:mb-10">
+          <div className="w-11 h-11 lg:w-14 lg:h-14 rounded-2xl bg-gold-500 text-navy-950 flex items-center justify-center shrink-0">
+            <HardHat className="w-6 h-6 lg:w-8 lg:h-8 stroke-[2.2]" />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">
-            Quản lý Dự án <span className="text-amber-400">PXU</span>
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Giao việc, Giám sát & Báo cáo Công trình — Đại học Phú Xuân
-          </p>
+          <div className="lg:hidden">
+            <div className="font-extrabold leading-tight">
+              Quản lý Dự án <span className="text-gold-400">PXU</span>
+            </div>
+            <div className="text-[11px] text-navy-100/80">Đại học Phú Xuân</div>
+          </div>
         </div>
 
-        {/* Card Box */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md">
-          {errorMessage && (
-            <div className="mb-5 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
-              <span>{errorMessage}</span>
-            </div>
-          )}
+        <div className="hidden lg:block max-w-md">
+          <div className="eyebrow mb-3">Đại học Phú Xuân</div>
+          <h1 className="text-4xl xl:text-[44px] font-extrabold leading-[1.08] tracking-tight">
+            Quản lý Dự án <span className="text-gold-400">PXU</span>
+          </h1>
+          <p className="text-sm text-navy-100/85 mt-3 leading-relaxed">
+            Giao việc, Giám sát &amp; Báo cáo Công trình — một nơi duy nhất để theo dõi tiến độ,
+            kinh phí và minh chứng hiện trường.
+          </p>
 
-          {step === 'credentials' ? (
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Chọn tài khoản Demo để vào ngay
-                </span>
+          <ul className="mt-8 space-y-4 text-[13.5px]">
+            <li className="flex items-start gap-3">
+              <span className="w-9 h-9 rounded-xl bg-white/10 text-gold-400 flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-4.5 h-4.5" />
+              </span>
+              <span className="leading-relaxed">
+                <strong className="block text-white">Admin — Chủ trì kế hoạch</strong>
+                <span className="text-navy-100/75">Tạo dự án, giao việc và nghiệm thu kết quả.</span>
+              </span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="w-9 h-9 rounded-xl bg-white/10 text-gold-400 flex items-center justify-center shrink-0">
+                <HardHat className="w-4.5 h-4.5" />
+              </span>
+              <span className="leading-relaxed">
+                <strong className="block text-white">Kỹ sư — Thực hiện hiện trường</strong>
+                <span className="text-navy-100/75">Báo cáo tiến độ, nộp minh chứng và báo trở ngại.</span>
+              </span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="w-9 h-9 rounded-xl bg-white/10 text-gold-400 flex items-center justify-center shrink-0">
+                <Eye className="w-4.5 h-4.5" />
+              </span>
+              <span className="leading-relaxed">
+                <strong className="block text-white">Lãnh đạo — Giám sát cấp cao</strong>
+                <span className="text-navy-100/75">Xem chỉ số các dự án được cấp quyền và gửi chỉ đạo.</span>
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        <div className="hidden lg:flex items-center gap-2 mt-auto pt-10 text-[11px] text-navy-100/70">
+          <Building2 className="w-3.5 h-3.5 text-gold-400/70" />
+          <span>Đại học Phú Xuân • Hệ thống giám sát xây dựng thực tế • Tiêu chuẩn an toàn TCVN</span>
+        </div>
+      </aside>
+
+      {/* Cột phải — chọn tài khoản / OTP */}
+      <main className="flex-1 flex items-center justify-center p-4 sm:p-8">
+        <div className="w-full max-w-md">
+          <div className="card p-6 sm:p-7">
+            {errorMessage && (
+              <div className="mb-5 p-3 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{errorMessage}</span>
               </div>
+            )}
 
-              <div className="space-y-2.5">
-                {users.map((u) => {
-                  let roleIcon = <ShieldCheck className="w-4 h-4 text-amber-400" />;
-                  let roleBadge = 'Admin (Toàn quyền)';
-                  if (u.role === 'assignee') {
-                    roleIcon = <HardHat className="w-4 h-4 text-blue-400" />;
-                    roleBadge = 'Kỹ sư (Thực hiện)';
-                  } else if (u.role === 'leader') {
-                    roleIcon = <Eye className="w-4 h-4 text-emerald-400" />;
-                    roleBadge = 'Lãnh đạo (Chỉ xem)';
-                  }
+            {step === 'credentials' ? (
+              <div>
+                <div className="eyebrow mb-1.5">Đăng nhập demo</div>
+                <h2 className="text-lg font-extrabold text-ink dark:text-white">Chọn tài khoản để vào ngay</h2>
+                <p className="text-xs text-ink-soft dark:text-slate-400 mt-1 mb-5">
+                  Bấm vào một hàng tài khoản để đăng nhập với vai trò tương ứng.
+                </p>
 
-                  return (
-                    <button
-                      key={u.id}
-                      onClick={() => handleSelectRole(u)}
-                      disabled={!u.isActive}
-                      className={`w-full text-left p-3.5 rounded-2xl border transition-all flex items-center justify-between group ${
-                        u.isActive
-                          ? 'bg-slate-800/80 border-slate-700/80 hover:bg-slate-800 hover:border-amber-500/60 hover:shadow-lg hover:shadow-amber-500/5'
-                          : 'bg-slate-950/40 border-slate-800/50 opacity-40 cursor-not-allowed'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-slate-700 text-amber-400 font-bold flex items-center justify-center text-sm group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors">
-                          {u.avatar}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm text-slate-100 group-hover:text-amber-300 transition-colors">
-                              {u.name}
-                            </span>
+                <div className="divide-y divide-line dark:divide-night-line border border-line dark:border-night-line rounded-2xl overflow-hidden">
+                  {users.map((u) => {
+                    let roleIcon = <ShieldCheck className="w-3.5 h-3.5 text-gold-600" />;
+                    let roleBadge = 'Admin (Toàn quyền)';
+                    if (u.role === 'assignee') {
+                      roleIcon = <HardHat className="w-3.5 h-3.5 text-pine-600" />;
+                      roleBadge = 'Kỹ sư (Thực hiện)';
+                    } else if (u.role === 'leader') {
+                      roleIcon = <Eye className="w-3.5 h-3.5 text-navy-700 dark:text-navy-100" />;
+                      roleBadge = 'Lãnh đạo (Chỉ xem)';
+                    }
+
+                    return (
+                      <button
+                        key={u.id}
+                        onClick={() => handleSelectRole(u)}
+                        disabled={!u.isActive}
+                        className={`w-full text-left px-4 py-3.5 flex items-center gap-3 transition-colors ${
+                          u.isActive
+                            ? 'bg-white dark:bg-night-card hover:bg-cream dark:hover:bg-night-line/50 cursor-pointer'
+                            : 'bg-cream/60 dark:bg-night-card/60 opacity-45 cursor-not-allowed'
+                        }`}
+                      >
+                        <Avatar text={u.avatar} tone={u.role === 'admin' ? 'gold' : u.role === 'assignee' ? 'pine' : 'navy'} />
+                        <span className="flex-1 min-w-0">
+                          <span className="flex items-center gap-2">
+                            <span className="font-semibold text-sm text-ink dark:text-white truncate">{u.name}</span>
                             {!u.isActive && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-medium">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 font-bold shrink-0">
                                 Đã khóa
                               </span>
                             )}
-                          </div>
-                          <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                          </span>
+                          <span className="text-[11px] text-ink-soft dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
                             {roleIcon}
                             <span>{roleBadge}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all" />
-                    </button>
-                  );
-                })}
-              </div>
+                          </span>
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-ink-soft/60 shrink-0" />
+                      </button>
+                    );
+                  })}
+                </div>
 
-              <div className="mt-6 pt-5 border-t border-slate-800/80 text-center">
-                <p className="text-xs text-slate-400">
+                <p className="mt-5 text-center text-xs text-ink-soft dark:text-slate-400">
                   Dữ liệu được lưu trong trình duyệt (LocalStorage).
                 </p>
               </div>
-            </div>
-          ) : (
-            /* 2FA Step */
-            <form onSubmit={handleVerify2FA}>
-              <div className="text-center mb-5">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto mb-2.5">
-                  <KeyRound className="w-6 h-6" />
+            ) : (
+              /* 2FA Step */
+              <form onSubmit={handleVerify2FA}>
+                <div className="text-center mb-5">
+                  <div className="w-12 h-12 rounded-2xl bg-gold-100 dark:bg-gold-500/15 text-gold-600 flex items-center justify-center mx-auto mb-2.5">
+                    <KeyRound className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-base font-bold text-ink dark:text-white">Xác thực hai yếu tố (2FA)</h3>
+                  <p className="text-xs text-ink-soft dark:text-slate-400 mt-1">
+                    Đang đăng nhập với tài khoản{' '}
+                    <span className="text-gold-600 font-semibold">{selectedUser?.name}</span>. Vui
+                    lòng nhập 6 số mã OTP.
+                  </p>
                 </div>
-                <h3 className="text-base font-bold text-white">Xác thực hai yếu tố (2FA)</h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Đang đăng nhập với tài khoản{' '}
-                  <span className="text-amber-300 font-semibold">{selectedUser?.name}</span>. Vui
-                  lòng nhập 6 số mã OTP.
-                </p>
-              </div>
 
-              {/* 6 OTP boxes */}
-              <div className="flex justify-center gap-2 sm:gap-2.5 mb-6">
-                {otp.map((digit, idx) => (
-                  <input
-                    key={idx}
-                    id={`otp-input-${idx}`}
-                    type="text"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(idx, e.target.value)}
-                    className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl font-mono font-bold bg-slate-800 border border-slate-700 rounded-xl text-amber-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
-                  />
-                ))}
-              </div>
+                {/* 6 OTP boxes */}
+                <div className="flex justify-center gap-2 sm:gap-2.5 mb-6">
+                  {otp.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      id={`otp-input-${idx}`}
+                      type="text"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleOtpChange(idx, e.target.value)}
+                      className="input w-11 h-13 sm:w-12 sm:h-14 !p-0 text-center text-xl font-mono font-bold text-gold-600"
+                    />
+                  ))}
+                </div>
 
-              <button
-                type="submit"
-                className="w-full py-3.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2"
-              >
-                <Lock className="w-4 h-4" />
-                Xác nhận & Vào hệ thống
-              </button>
+                <button type="submit" className="btn-primary w-full">
+                  <Lock className="w-4 h-4" />
+                  Xác nhận &amp; Vào hệ thống
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setStep('credentials')}
-                className="w-full mt-3 py-2 text-xs text-slate-400 hover:text-slate-200 transition-colors"
-              >
-                ← Quay lại chọn tài khoản khác
-              </button>
-            </form>
-          )}
+                <div className="text-center mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setStep('credentials')}
+                    className="btn-quiet"
+                  >
+                    ← Quay lại chọn tài khoản khác
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
-
-        {/* Security watermark */}
-        <div className="text-center mt-6 text-[11px] text-slate-400 flex items-center justify-center gap-2">
-          <Building2 className="w-3.5 h-3.5 text-amber-500/60" />
-          <span>Hệ thống giám sát xây dựng thực tế • Tiêu chuẩn an toàn TCVN</span>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }
-

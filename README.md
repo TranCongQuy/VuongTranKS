@@ -103,3 +103,5 @@ src/
 supabase/
   schema.sql      # Schema chuẩn bị cho đợt nối Supabase thật
 ```
+
+<!-- Kích hoạt lại triển khai Vercel: 2026-11-06 -->

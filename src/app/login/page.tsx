@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 export default function LoginPage() {
   const router = useRouter();
   const users = useConstructionStore((s) => s.users);
-  const setCurrentUser = useConstructionStore((s) => s.setCurrentUser);
+  const loginAs = useConstructionStore((s) => s.loginAs);
   const isTwoFactorSimulated = useConstructionStore((s) => s.isTwoFactorSimulated);
 
   const [step, setStep] = useState<'credentials' | '2fa'>('credentials');
@@ -49,7 +49,7 @@ export default function LoginPage() {
   };
 
   const finalizeLogin = (user: (typeof users)[0]) => {
-    setCurrentUser(user);
+    loginAs(user);
     toast.success(`Đăng nhập thành công với vai trò: ${user.name}`);
     router.push('/');
   };
@@ -105,10 +105,10 @@ export default function LoginPage() {
             <HardHat className="w-8 h-8 stroke-[2.2]" />
           </div>
           <h1 className="text-2xl font-black text-white tracking-tight">
-            PXU CONSTRUCT <span className="text-amber-400">PRO</span>
+            Quản lý Dự án <span className="text-amber-400">PXU</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Hệ thống Giao việc & Theo dõi Công trình Xây dựng
+            Giao việc, Giám sát & Báo cáo Công trình — Đại học Phú Xuân
           </p>
         </div>
 

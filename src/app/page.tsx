@@ -1,7 +1,21 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { motion } from 'motion/react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as ChartTooltip,
+  PieChart,
+  Pie,
+  Cell,
+  Legend as ChartLegend,
+} from 'recharts';
 import {
   Layers,
   CheckSquare,
@@ -33,11 +47,104 @@ import { useConstructionStore } from '@/lib/store';
 import {
   Task,
   CATEGORY_CONFIG,
+  TASK_STATUS_CONFIG,
   INCIDENT_SEVERITY_CONFIG,
   INCIDENT_STATUS_CONFIG,
 } from '@/lib/types';
 import { formatDateVN, formatDateTimeVN, formatCurrencyVN } from '@/lib/utils';
 import { toast } from 'sonner';
+
+// Đếm số động (ease-out, ~600ms) cho các KPI số nguyên chính
+function useAnimatedNumber(target: number, duration = 600): number {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setValue(Math.round(target * eased));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return value;
+}
+
+const fadeUp = {
+  initial: { opacity: 0, y: 16 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: '-40px' },
+  transition: { duration: 0.45, ease: 'easeOut' as const },
+};
+
+interface StatusSlice {
+  name: string;
+  value: number;
+  color: string;
+}
+
+function StatusDonut({ data, total }: { data: StatusSlice[]; total: number }) {
+  if (total === 0 || data.length === 0) {
+    return (
+      <div className="py-10 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+        Chưa có nhiệm vụ nào trong phạm vi hiển thị.
+      </div>
+    );
+  }
+  return (
+    <ResponsiveContainer width="100%" height={260}>
+      <PieChart>
+        <Pie
+          data={data}
+          dataKey="value"
+          nameKey="name"
+          innerRadius={62}
+          outerRadius={92}
+          paddingAngle={2}
+          strokeWidth={0}
+        >
+          {data.map((d) => (
+            <Cell key={d.name} fill={d.color} />
+          ))}
+        </Pie>
+        <ChartTooltip formatter={(v) => [`${v} nhiệm vụ`, '']} />
+        <ChartLegend wrapperStyle={{ fontSize: 11 }} />
+      </PieChart>
+    </ResponsiveContainer>
+  );
+}
+
+function ProjectProgressBars({
+  data,
+}: {
+  data: { code: string; name: string; progress: number }[];
+}) {
+  if (data.length === 0) {
+    return (
+      <div className="py-10 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+        Chưa có dự án nào trong phạm vi hiển thị.
+      </div>
+    );
+  }
+  return (
+    <ResponsiveContainer width="100%" height={280}>
+      <BarChart data={data} margin={{ top: 8, right: 12, left: -18, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+        <XAxis dataKey="code" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+        <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+        <ChartTooltip
+          formatter={(v) => [`${v}%`, 'Tiến độ']}
+          labelFormatter={(_, payload) =>
+            payload && payload[0] ? String(payload[0].payload.name) : ''
+          }
+        />
+        <Bar dataKey="progress" fill="#F59E0B" radius={[6, 6, 0, 0]} maxBarSize={44} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
 
 export default function DashboardPage() {
   const [selectedApprovalTask, setSelectedApprovalTask] = useState<Task | null>(null);
@@ -49,6 +156,8 @@ export default function DashboardPage() {
   const tasks = useConstructionStore((s) => s.tasks);
   const getOverdueTasks = useConstructionStore((s) => s.getOverdueTasks);
   const getPendingApprovalTasks = useConstructionStore((s) => s.getPendingApprovalTasks);
+  const getUserTasks = useConstructionStore((s) => s.getUserTasks);
+  const users = useConstructionStore((s) => s.users);
   const auditLogs = useConstructionStore((s) => s.auditLogs);
   const addLeaderDirective = useConstructionStore((s) => s.addLeaderDirective);
 
@@ -112,16 +221,75 @@ export default function DashboardPage() {
   // Projects that have active leadership directives
   const projectsWithDirectives = visibleProjects.filter((p) => p.directive);
 
+  // Dữ liệu biểu đồ (toàn bộ truy từ store)
+  const projectProgressData = visibleProjects.map((p) => ({
+    code: p.code,
+    name: p.name,
+    progress: calculateProjectProgress(p.id),
+  }));
+  const statusChartData: StatusSlice[] = (
+    Object.keys(statusCounts) as (keyof typeof statusCounts)[]
+  )
+    .map((key) => ({
+      name: TASK_STATUS_CONFIG[key].label,
+      value: statusCounts[key],
+      color: TASK_STATUS_CONFIG[key].color,
+    }))
+    .filter((d) => d.value > 0);
+  const activeProjectsCount = visibleProjects.filter((p) => p.status === 'active').length;
+  const activeProjectsPercent =
+    visibleProjects.length > 0
+      ? Math.round((activeProjectsCount / visibleProjects.length) * 100)
+      : 0;
+
+  // Việc của chính user hiện tại (dùng cho view Giám sát/assignee)
+  const myTasks = getUserTasks(currentUser.id);
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const isOverdueTask = (t: Task) => {
+    if (t.status === 'approved' || t.status === 'submitted') return false;
+    const due = new Date(t.dueDate);
+    due.setHours(0, 0, 0, 0);
+    return due < todayStart;
+  };
+  const myOverdueTasks = myTasks.filter(isOverdueTask);
+  const mySubmittedTasks = myTasks.filter((t) => t.status === 'submitted');
+  const myUpcomingTasks = [...myTasks]
+    .filter((t) => t.status !== 'approved')
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    .slice(0, 5);
+
+  // Số KPI đếm động + trạng thái mount cho thanh tiến độ
+  const animProjects = useAnimatedNumber(visibleProjects.length);
+  const animPending = useAnimatedNumber(pendingTasks.length);
+  const animOverdue = useAnimatedNumber(overdueTasks.length);
+  const animAvgProgress = useAnimatedNumber(avgProgress);
+  const animIncidents = useAnimatedNumber(unresolvedIncidents.length);
+  const animMyTasks = useAnimatedNumber(myTasks.length);
+  const animMyOverdue = useAnimatedNumber(myOverdueTasks.length);
+  const animMySubmitted = useAnimatedNumber(mySubmittedTasks.length);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
   // Quick directive state for leaders
   const [selectedDirectiveProjectId, setSelectedDirectiveProjectId] = useState(
     visibleProjects[0]?.id || ''
   );
   const [quickDirectiveText, setQuickDirectiveText] = useState('');
+  // Fallback: nếu dự án đang chọn không còn thuộc phạm vi được cấp quyền thì dùng dự án đầu tiên
+  const effectiveDirectiveProjectId = visibleProjects.some(
+    (p) => p.id === selectedDirectiveProjectId
+  )
+    ? selectedDirectiveProjectId
+    : visibleProjects[0]?.id || '';
 
   const handleSendQuickDirective = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!quickDirectiveText.trim() || !selectedDirectiveProjectId) return;
-    addLeaderDirective(selectedDirectiveProjectId, quickDirectiveText.trim());
+    if (!quickDirectiveText.trim() || !effectiveDirectiveProjectId) return;
+    addLeaderDirective(effectiveDirectiveProjectId, quickDirectiveText.trim());
     toast.success('Đã gửi ý kiến chỉ đạo trực tiếp đến Chủ trì dự án & Kỹ sư!');
     setQuickDirectiveText('');
   };
@@ -162,7 +330,7 @@ export default function DashboardPage() {
                   className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
                 >
                   <FileText className="w-4 h-4" />
-                  Xuất Báo cáo PDF
+                  Báo cáo & Xuất PDF
                 </Link>
                 <Link
                   href="/projects"
@@ -176,7 +344,12 @@ export default function DashboardPage() {
           </div>
 
           {/* 4 CON SỐ VÀNG CHO LÃNH ĐẠO (BIG NUMBERS ONLY - NO WALLS OF TEXT) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: 'easeOut' }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
+          >
             {/* KPI 1: TỔNG KINH PHÍ GIÁM SÁT */}
             <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
               <div className="flex items-center justify-between text-slate-400 mb-2">
@@ -217,8 +390,8 @@ export default function DashboardPage() {
               </div>
               <div className="mt-2 w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                  style={{ width: `${totalPaidPercent}%` }}
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-700 ease-out"
+                  style={{ width: mounted ? `${totalPaidPercent}%` : '0%' }}
                 />
               </div>
             </div>
@@ -234,7 +407,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="font-mono text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-2">
-                {avgProgress}%
+                {animAvgProgress}%
               </div>
               <div className="mt-2 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2">
                 <span className="font-semibold text-emerald-600">
@@ -256,7 +429,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="font-mono text-2xl sm:text-3xl font-black text-rose-600 mt-2">
-                {unresolvedIncidents.length} sự cố
+                {animIncidents} sự cố
               </div>
               <div className="mt-2 text-[11px] font-medium text-rose-500 flex items-center gap-1">
                 {unresolvedIncidents.length > 0 ? (
@@ -269,7 +442,29 @@ export default function DashboardPage() {
                 )}
               </div>
             </div>
-          </div>
+          </motion.div>
+
+          {/* BIỂU ĐỒ LÃNH ĐẠO: TIẾN ĐỘ DỰ ÁN ĐƯỢC CẤP & PHÂN BỐ TRẠNG THÁI */}
+          <motion.div {...fadeUp} className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <div className="lg:col-span-3 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                Tiến độ các dự án được cấp quyền (%)
+              </h3>
+              <p className="text-xs text-slate-400 mb-2">
+                Tính từ nghiệm thu thực tế của từng dự án thuộc phạm vi giám sát của bạn
+              </p>
+              <ProjectProgressBars data={projectProgressData} />
+            </div>
+            <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                Phân bố trạng thái nhiệm vụ
+              </h3>
+              <p className="text-xs text-slate-400 mb-2">
+                {visibleTasks.length} nhiệm vụ thuộc {visibleProjects.length} dự án được cấp
+              </p>
+              <StatusDonut data={statusChartData} total={visibleTasks.length} />
+            </div>
+          </motion.div>
 
           {/* KHỐI 1: BẢNG SỐ LIỆU THEO DÕI CÁC ĐỢT NỘP TIỀN (FINANCIAL MILESTONES COCKPIT) */}
           <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
@@ -369,7 +564,11 @@ export default function DashboardPage() {
                   Tiến độ & Chỉ số Từng Dự án Giám sát ({visibleProjects.length} dự án)
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Lãnh đạo 1 (TS. Dũng) chỉ thấy Dự án 1 & 2; Lãnh đạo 2 (ThS. Tuấn) chỉ thấy Dự án 3 & 4
+                  Bạn chỉ thấy các dự án được Admin cấp quyền giám sát — hiện tại gồm{' '}
+                  {visibleProjects.length} dự án
+                  {visibleProjects.length > 0
+                    ? `: ${visibleProjects.map((p) => p.code).join(', ')}`
+                    : ''}
                 </p>
               </div>
             </div>
@@ -476,7 +675,10 @@ export default function DashboardPage() {
                     {/* Bottom Actions */}
                     <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                       <span className="text-xs text-slate-400">
-                        Chủ trì: <strong className="text-slate-700 dark:text-slate-300">Thầy Trần Quốc Vương</strong>
+                        Chủ trì:{' '}
+                        <strong className="text-slate-700 dark:text-slate-300">
+                          {users.find((u) => u.id === proj.managerId)?.name || '—'}
+                        </strong>
                       </span>
                       <Link
                         href={`/projects/${proj.id}`}
@@ -503,14 +705,14 @@ export default function DashboardPage() {
                   Gửi Ý kiến Chỉ đạo Nhanh từ Lãnh đạo
                 </h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Thông báo chỉ đạo sẽ được gửi tức thì đến Chủ trì dự án (Thầy Vương) và Kỹ sư (Thầy Kiệt)
+                  Thông báo chỉ đạo sẽ được gửi tức thì đến Chủ trì dự án và các cộng sự phụ trách
                 </p>
               </div>
             </div>
 
             <form onSubmit={handleSendQuickDirective} className="flex flex-col sm:flex-row gap-3 pt-1">
               <select
-                value={selectedDirectiveProjectId}
+                value={effectiveDirectiveProjectId}
                 onChange={(e) => setSelectedDirectiveProjectId(e.target.value)}
                 className="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-amber-500"
               >
@@ -567,9 +769,9 @@ export default function DashboardPage() {
               </h1>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-2xl leading-relaxed">
                 {currentUser.role === 'admin' &&
-                  'Bảng điều hành dự án của Thầy Trần Quốc Vương: Giao việc cho Thầy Kiệt, xác nhận các đợt nộp tiền kinh phí và thẩm định chất lượng thi công.'}
+                  'Bảng điều hành tổng thể: giao việc cho cộng sự, xác nhận các đợt nộp tiền kinh phí và thẩm định chất lượng thi công.'}
                 {currentUser.role === 'assignee' &&
-                  'Sổ tay kỹ sư của Thầy Nguyễn Văn Tuấn Kiệt: Báo cáo tiến độ thi công Cụm Sân bóng PXU, gửi video kiểm tra thực địa và báo cáo trở ngại thời tiết.'}
+                  'Sổ tay kỹ sư hiện trường: báo cáo tiến độ các dự án được phân công, gửi minh chứng thực địa và báo cáo trở ngại phát sinh.'}
               </p>
             </div>
 
@@ -627,8 +829,109 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* VIỆC CỦA TÔI HÔM NAY — ưu tiên cho Giám sát/Kỹ sư hiện trường (assignee) */}
+        {currentUser.role === 'assignee' && (
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: 'easeOut' }}
+            className="p-6 rounded-3xl bg-white dark:bg-slate-900 border-2 border-amber-500/40 shadow-sm space-y-4"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="font-black text-lg text-slate-900 dark:text-white">
+                  Việc của tôi hôm nay
+                </h2>
+                <p className="text-xs text-slate-400">
+                  Các nhiệm vụ được giao cho {currentUser.name}, ưu tiên việc sắp tới hạn và quá hạn
+                </p>
+              </div>
+              <Link
+                href="/my-tasks"
+                className="px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-2 shrink-0"
+              >
+                <Send className="w-4 h-4" />
+                Báo cáo tiến độ
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
+                <div className="font-mono text-2xl font-black text-slate-900 dark:text-white">
+                  {animMyTasks}
+                </div>
+                <div className="text-[10px] uppercase font-semibold text-slate-400">
+                  Việc được giao
+                </div>
+              </div>
+              <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800/50">
+                <div className="font-mono text-2xl font-black text-rose-600">{animMyOverdue}</div>
+                <div className="text-[10px] uppercase font-semibold text-rose-400">
+                  Quá hạn của tôi
+                </div>
+              </div>
+              <div className="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800/50">
+                <div className="font-mono text-2xl font-black text-indigo-600">
+                  {animMySubmitted}
+                </div>
+                <div className="text-[10px] uppercase font-semibold text-indigo-400">
+                  Đang chờ duyệt
+                </div>
+              </div>
+            </div>
+
+            {myUpcomingTasks.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-2">
+                Bạn chưa có nhiệm vụ nào đang mở. Khi được giao việc mới, nhiệm vụ sẽ hiện tại đây.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {myUpcomingTasks.map((t) => {
+                  const proj = visibleProjects.find((p) => p.id === t.projectId);
+                  const overdue = isOverdueTask(t);
+                  return (
+                    <Link
+                      key={t.id}
+                      href={`/projects/${t.projectId}?tab=tasks&taskId=${t.id}`}
+                      className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:border-amber-400/60 transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold">
+                            {proj?.code || 'DỰ ÁN'}
+                          </span>
+                          <span className="text-[11px] font-semibold text-slate-500">
+                            {TASK_STATUS_CONFIG[t.status].label} • {t.progress}%
+                          </span>
+                        </div>
+                        <div className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate mt-0.5">
+                          {t.title}
+                        </div>
+                      </div>
+                      <span
+                        className={`text-[11px] font-bold whitespace-nowrap flex items-center gap-1 ${
+                          overdue ? 'text-rose-600' : 'text-slate-500'
+                        }`}
+                      >
+                        <Calendar className="w-3.5 h-3.5" />
+                        {overdue ? 'Quá hạn: ' : 'Hạn: '}
+                        {formatDateVN(t.dueDate)}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </motion.section>
+        )}
+
         {/* 4 Primary Metric Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: 'easeOut', delay: 0.05 }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
+        >
           <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -640,13 +943,15 @@ export default function DashboardPage() {
             </div>
             <div className="mt-3">
               <span className="text-3xl font-black font-tabular text-slate-900 dark:text-white">
-                {visibleProjects.length}
+                {animProjects}
               </span>
               <span className="text-xs text-slate-400 ml-1.5">chương trình</span>
             </div>
             <div className="mt-2 text-[11px] text-slate-500 flex items-center gap-1">
-              <span className="text-emerald-600 font-semibold">100%</span>
-              <span>đang vận hành theo kế hoạch</span>
+              <span className="text-emerald-600 font-semibold">{activeProjectsPercent}%</span>
+              <span>
+                đang triển khai ({activeProjectsCount}/{visibleProjects.length} dự án)
+              </span>
             </div>
           </div>
 
@@ -661,12 +966,12 @@ export default function DashboardPage() {
             </div>
             <div className="mt-3">
               <span className="text-3xl font-black font-tabular text-slate-900 dark:text-white">
-                {pendingTasks.length}
+                {animPending}
               </span>
               <span className="text-xs text-slate-400 ml-1.5">đã nộp kết quả</span>
             </div>
             <div className="mt-2 text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">
-              Chờ Thầy Vương nghiệm thu
+              Chờ Chủ trì dự án nghiệm thu
             </div>
           </div>
 
@@ -681,7 +986,7 @@ export default function DashboardPage() {
             </div>
             <div className="mt-3">
               <span className="text-3xl font-black font-tabular text-rose-600">
-                {overdueTasks.length}
+                {animOverdue}
               </span>
               <span className="text-xs text-slate-400 ml-1.5">cần đôn đốc</span>
             </div>
@@ -701,14 +1006,36 @@ export default function DashboardPage() {
             </div>
             <div className="mt-3">
               <span className="text-3xl font-black font-tabular text-slate-900 dark:text-white">
-                {avgProgress}%
+                {animAvgProgress}%
               </span>
             </div>
             <div className="mt-2 text-[11px] text-slate-500">
               Chỉ đạt 100% khi tất cả đã nghiệm thu
             </div>
           </div>
-        </div>
+        </motion.div>
+
+        {/* BIỂU ĐỒ TỔNG QUAN: TIẾN ĐỘ TỪNG DỰ ÁN & PHÂN BỐ TRẠNG THÁI NHIỆM VỤ */}
+        <motion.div {...fadeUp} className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <div className="lg:col-span-3 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
+              Tiến độ theo từng dự án (%)
+            </h3>
+            <p className="text-xs text-slate-400 mb-2">
+              Tiến độ nghiệm thu thực tế của {visibleProjects.length} dự án trong phạm vi hiển thị
+            </p>
+            <ProjectProgressBars data={projectProgressData} />
+          </div>
+          <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
+              Phân bố trạng thái nhiệm vụ
+            </h3>
+            <p className="text-xs text-slate-400 mb-2">
+              Tổng {visibleTasks.length} nhiệm vụ thuộc các dự án đang hiển thị
+            </p>
+            <StatusDonut data={statusChartData} total={visibleTasks.length} />
+          </div>
+        </motion.div>
 
         {/* Dual Section: Financial Overview & Field Incidents Monitoring */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -755,24 +1082,15 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Showcase Sân bóng status */}
-              <div className="mt-4 p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/60 text-xs space-y-1.5">
-                <div className="flex items-center justify-between font-bold text-slate-900 dark:text-slate-100">
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    Cụm Sân bóng PXU (2,4 tỷ VNĐ):
-                  </span>
-                  <span className="text-emerald-600 font-mono">Đã nộp 60% (1,44 tỷ)</span>
-                </div>
-                <p className="text-[11px] text-slate-600 dark:text-slate-300">
-                  Đợt 1 (Tạm ứng 30%) & Đợt 2 (Nền hạ 30%) đã đối soát biên lai. Đợt 3 (Thảm cỏ 25% - 600 triệu) hạn 20/04/2026 đang chuẩn bị nộp.
-                </p>
-              </div>
             </div>
 
             <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
               <Link
-                href="/projects/pkg-6?tab=financial"
+                href={
+                  visibleProjects[0]
+                    ? `/projects/${visibleProjects[0].id}?tab=financial`
+                    : '/projects'
+                }
                 className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
               >
                 Chi tiết giải ngân các đợt nộp
@@ -853,7 +1171,11 @@ export default function DashboardPage() {
 
             <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
               <Link
-                href="/projects/pkg-1?tab=incidents"
+                href={
+                  allVisibleIncidents[0]
+                    ? `/projects/${tasks.find((t) => t.id === allVisibleIncidents[0].taskId)?.projectId || visibleProjects[0]?.id || ''}?tab=incidents`
+                    : '/projects'
+                }
                 className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
               >
                 Xem toàn bộ trở ngại & giải pháp

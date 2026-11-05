@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import './globals.css';
 import { AppProvider } from '@/components/providers/AppProvider';
 
 export const metadata: Metadata = {
-  title: 'Hệ thống Quản lý Kế hoạch, Giao việc & Đánh giá Lãnh đạo | PXU TaskMaster Pro',
-  description: 'Nền tảng phân rã mục tiêu, giao việc cộng sự, báo cáo chỉ đạo và đánh giá lãnh đạo trực quan, chuyên nghiệp.',
+  title: 'Quản lý Dự án PXU | Giao việc, Giám sát & Báo cáo Công trình',
+  description: 'Hệ thống quản lý dự án và gói thầu của Đại học Phú Xuân: Admin giao việc, giám sát báo cáo tiến độ kèm ảnh minh chứng và sự cố, lãnh đạo theo dõi và chỉ đạo theo dự án được cấp quyền.',
 };
 
 export default function RootLayout({
@@ -40,7 +41,15 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased min-h-screen bg-[#F8F9FA] dark:bg-[#090D16]">
-        <AppProvider>{children}</AppProvider>
+        <Suspense
+          fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              <p className="text-sm font-medium text-slate-500">Đang khởi tạo Quản lý Dự án PXU...</p>
+            </div>
+          }
+        >
+          <AppProvider>{children}</AppProvider>
+        </Suspense>
       </body>
     </html>
   );

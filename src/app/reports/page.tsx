@@ -7,6 +7,14 @@ import { Printer, Sparkles } from 'lucide-react';
 import { formatDateVN, formatCurrencyVN } from '@/lib/utils';
 import { TASK_STATUS_CONFIG, CATEGORY_CONFIG, INCIDENT_SEVERITY_CONFIG, INCIDENT_STATUS_CONFIG } from '@/lib/types';
 
+const INCIDENT_TYPE_LABELS: Record<string, string> = {
+  weather: 'thời tiết',
+  material: 'vật tư',
+  technical: 'kỹ thuật',
+  site: 'mặt bằng',
+  other: 'phát sinh khác',
+};
+
 export default function ReportsPage() {
   const getVisibleProjects = useConstructionStore((s) => s.getVisibleProjects);
   const tasks = useConstructionStore((s) => s.tasks);
@@ -30,6 +38,43 @@ export default function ReportsPage() {
 
   const milestones = project?.paymentMilestones || [];
   const projectIncidents = project ? getProjectIncidents(project.id) : [];
+
+  // ===== Số liệu tự sinh cho mục IV (toàn bộ tính từ dữ liệu thật của dự án đang chọn) =====
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const overdueProjectTasks = projectTasks.filter((t) => {
+    if (t.status === 'submitted' || t.status === 'approved') return false;
+    const due = new Date(t.dueDate);
+    due.setHours(0, 0, 0, 0);
+    return due < todayStart;
+  });
+  const openProjectIncidents = projectIncidents.filter(
+    (i) => i.status === 'open' || i.status === 'resolving'
+  );
+  const mainOpenIncidentType = (() => {
+    if (openProjectIncidents.length === 0) return null;
+    const counts = new Map<string, number>();
+    openProjectIncidents.forEach((i) => counts.set(i.type, (counts.get(i.type) || 0) + 1));
+    const topType = [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    return INCIDENT_TYPE_LABELS[topType] || topType;
+  })();
+  const paidMilestones = milestones.filter((m) => m.status === 'paid');
+  const paidMilestonePercent =
+    milestones.length > 0 ? Math.round((paidMilestones.length / milestones.length) * 100) : 0;
+  const approvedTaskCount = projectTasks.filter((t) => t.status === 'approved').length;
+  const allTasksApproved =
+    projectTasks.length > 0 && projectTasks.every((t) => t.status === 'approved');
+  const hasIssues = overdueProjectTasks.length > 0 || openProjectIncidents.length > 0;
+
+  // Người ký động: cộng sự = assignee đầu tiên trong memberIds của dự án; chủ trì = managerId (admin)
+  const leadAssignee = project
+    ? project.memberIds
+        .map((id) => users.find((u) => u.id === id))
+        .find((u) => u?.role === 'assignee') || users.find((u) => u.role === 'assignee')
+    : undefined;
+  const projectManager = project
+    ? users.find((u) => u.id === project.managerId) || users.find((u) => u.role === 'admin')
+    : undefined;
 
   const handlePrint = () => {
     window.print();
@@ -308,7 +353,7 @@ export default function ReportsPage() {
                               {inc.solution || 'Đang theo dõi xử lý'}
                             </td>
                             <td className="py-2 px-3 text-slate-600 whitespace-nowrap">
-                              {inc.reportedBy}
+                              {users.find((u) => u.id === inc.reportedBy)?.name ?? inc.reportedBy}
                             </td>
                             <td className="py-2 px-3 text-right font-semibold whitespace-nowrap">
                               {st.label}
@@ -328,10 +373,38 @@ export default function ReportsPage() {
                 IV. Đánh giá tiến độ & Kết luận của Chủ trì dự án:
               </strong>
               <p className="text-slate-700 leading-relaxed">
-                - Các mốc nhiệm vụ trọng tâm được triển khai bám sát tiến độ; hồ sơ và video minh chứng hiện trường đáp ứng tiêu chuẩn kỹ thuật.
+                - Tiến độ tổng thể của dự án hiện đạt {progress}%: {approvedTaskCount}/
+                {projectTasks.length} nhiệm vụ đã được nghiệm thu
+                {milestones.length > 0
+                  ? `; kinh phí đã thanh toán ${paidMilestones.length}/${milestones.length} đợt phân kỳ (${paidMilestonePercent}%).`
+                  : '; dự án chưa có phân kỳ thanh toán nào được ghi nhận.'}
               </p>
+              {overdueProjectTasks.length > 0 && (
+                <p className="text-slate-700 leading-relaxed">
+                  - Hiện còn {overdueProjectTasks.length} nhiệm vụ đã quá hạn chưa hoàn thành (
+                  {overdueProjectTasks
+                    .slice(0, 3)
+                    .map((t) => `“${t.title}” — hạn ${formatDateVN(t.dueDate)}`)
+                    .join('; ')}
+                  {overdueProjectTasks.length > 3 ? '; …' : ''}). Yêu cầu cộng sự phụ trách đôn
+                  đốc xử lý dứt điểm và báo cáo lại Chủ trì dự án.
+                </p>
+              )}
+              {openProjectIncidents.length > 0 && (
+                <p className="text-slate-700 leading-relaxed">
+                  - Đang có {openProjectIncidents.length} sự cố chưa xử lý xong
+                  {mainOpenIncidentType ? `, chủ yếu thuộc nhóm ${mainOpenIncidentType}` : ''}.
+                  Yêu cầu tiếp tục theo dõi biện pháp khắc phục cho tới khi đóng toàn bộ sự cố.
+                </p>
+              )}
               <p className="text-slate-700 leading-relaxed">
-                - Tình hình giải ngân kinh phí các đợt được kiểm soát minh bạch, đối soát đầy đủ biên lai chuyển tiền. Các trở ngại thời tiết đã được khắc phục kịp thời.
+                {hasIssues
+                  ? '- Kết luận: Dự án chưa đạt trạng thái hoàn thành toàn diện do còn tồn tại nêu trên; chỉ nghiệm thu toàn bộ khi mọi nhiệm vụ quá hạn được xử lý và các sự cố đang mở được đóng.'
+                  : `- Kết luận: Dự án không còn nhiệm vụ quá hạn và không còn sự cố đang mở${
+                      allTasksApproved
+                        ? '; toàn bộ nhiệm vụ đã nghiệm thu đạt, đủ điều kiện đóng dự án.'
+                        : '; tiến độ đang được kiểm soát, tiếp tục triển khai các nhiệm vụ còn lại theo kế hoạch.'
+                    }`}
               </p>
             </div>
 
@@ -341,7 +414,7 @@ export default function ReportsPage() {
                 <div className="font-bold uppercase text-slate-800">NGƯỜI LẬP BIỂU</div>
                 <div className="text-[10px] text-slate-400 italic mt-0.5">(Ký và ghi rõ họ tên)</div>
                 <div className="h-16 flex items-center justify-center font-serif text-slate-400 italic text-sm">
-                  Đã ký điện tử
+                  ........................
                 </div>
                 <div className="font-bold text-slate-900">{currentUser.name}</div>
               </div>
@@ -350,18 +423,24 @@ export default function ReportsPage() {
                 <div className="font-bold uppercase text-slate-800">CỘNG SỰ PHỤ TRÁCH</div>
                 <div className="text-[10px] text-slate-400 italic mt-0.5">(Ký và ghi rõ họ tên)</div>
                 <div className="h-16 flex items-center justify-center font-serif text-slate-400 italic text-sm">
-                  Tuấn Kiệt
+                  ........................
                 </div>
-                <div className="font-bold text-slate-900">Thầy Nguyễn Văn Tuấn Kiệt</div>
+                <div className="font-bold text-slate-900">{leadAssignee?.name || '—'}</div>
               </div>
 
               <div>
                 <div className="font-bold uppercase text-slate-800">CHỦ TRÌ DỰ ÁN DUYỆT</div>
                 <div className="text-[10px] text-slate-400 italic mt-0.5">(Ký, xác nhận kết quả)</div>
-                <div className="h-16 flex items-center justify-center font-serif text-amber-700 italic font-bold text-base">
-                  [ĐÃ DUYỆT ĐẠT]
-                </div>
-                <div className="font-bold text-slate-900">Thầy Trần Quốc Vương</div>
+                {allTasksApproved ? (
+                  <div className="h-16 flex items-center justify-center font-serif text-emerald-700 italic font-bold text-base">
+                    [ĐÃ DUYỆT ĐẠT]
+                  </div>
+                ) : (
+                  <div className="h-16 flex items-center justify-center font-serif text-rose-700 italic font-bold text-base">
+                    [CHƯA NGHIỆM THU TOÀN BỘ]
+                  </div>
+                )}
+                <div className="font-bold text-slate-900">{projectManager?.name || '—'}</div>
               </div>
             </div>
           </div>

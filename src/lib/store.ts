@@ -39,9 +39,12 @@ interface ConstructionStoreState {
   auditLogs: AuditLog[];
   theme: 'light' | 'dark';
   isTwoFactorSimulated: boolean;
+  isAuthenticated: boolean;
 
   // Role & User
   setCurrentUser: (userIdOrUser: string | User) => void;
+  loginAs: (userIdOrUser: string | User) => void;
+  logout: () => void;
   setTheme: (theme: 'light' | 'dark') => void;
   toggleTheme: () => void;
   toggleTwoFactor: (enabled: boolean) => void;
@@ -127,6 +130,7 @@ export const useConstructionStore = create<ConstructionStoreState>()(
       auditLogs: INITIAL_AUDIT_LOGS,
       theme: 'light',
       isTwoFactorSimulated: true,
+      isAuthenticated: false,
 
       setCurrentUser: (userIdOrUser) => {
         const { users } = get();
@@ -139,6 +143,34 @@ export const useConstructionStore = create<ConstructionStoreState>()(
         if (target) {
           set({ currentUser: target });
         }
+      },
+
+      loginAs: (userIdOrUser) => {
+        const { users } = get();
+        let target: User | undefined;
+        if (typeof userIdOrUser === 'string') {
+          target = users.find((u) => u.id === userIdOrUser);
+        } else {
+          target = userIdOrUser;
+        }
+        if (target) {
+          set({ currentUser: target, isAuthenticated: true });
+          get().addAuditLog(
+            'Đăng nhập hệ thống',
+            `Người dùng: ${target.name}`,
+            `Vai trò: ${target.role}`
+          );
+        }
+      },
+
+      logout: () => {
+        const { currentUser } = get();
+        set({ isAuthenticated: false });
+        get().addAuditLog(
+          'Đăng xuất',
+          `Người dùng: ${currentUser?.name || ''}`,
+          'Đã đăng xuất khỏi hệ thống'
+        );
       },
 
       setTheme: (theme) => set({ theme }),
@@ -471,9 +503,11 @@ export const useConstructionStore = create<ConstructionStoreState>()(
       getOverdueTasks: () => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        const visibleProjectIds = new Set(get().getVisibleProjects().map((p) => p.id));
 
         return get().tasks.filter((t) => {
-          if (t.isDeleted || t.status === 'approved') return false;
+          if (t.isDeleted || t.status === 'approved' || t.status === 'submitted') return false;
+          if (!visibleProjectIds.has(t.projectId)) return false;
           const due = new Date(t.dueDate);
           due.setHours(0, 0, 0, 0);
           return due < today;
@@ -481,7 +515,10 @@ export const useConstructionStore = create<ConstructionStoreState>()(
       },
 
       getPendingApprovalTasks: () => {
-        return get().tasks.filter((t) => t.status === 'submitted' && !t.isDeleted);
+        const visibleProjectIds = new Set(get().getVisibleProjects().map((p) => p.id));
+        return get().tasks.filter(
+          (t) => t.status === 'submitted' && !t.isDeleted && visibleProjectIds.has(t.projectId)
+        );
       },
 
       addTask: (data) => {
@@ -677,6 +714,7 @@ export const useConstructionStore = create<ConstructionStoreState>()(
               ? {
                   ...t,
                   status: 'returned',
+                  progress: Math.min(task.progress, 90),
                   returnReason: reason,
                   updatedAt: now,
                 }
@@ -775,9 +813,21 @@ export const useConstructionStore = create<ConstructionStoreState>()(
             const updatedSubtasks = t.subtasks.map((st) =>
               st.id === subtaskId ? { ...st, completed: !st.completed } : st
             );
+            let nextProgress = t.progress;
+            if (
+              updatedSubtasks.length > 0 &&
+              (t.status === 'todo' || t.status === 'in_progress')
+            ) {
+              const completedCount = updatedSubtasks.filter((st) => st.completed).length;
+              nextProgress = Math.min(
+                Math.round((completedCount / updatedSubtasks.length) * 100),
+                99
+              );
+            }
             return {
               ...t,
               subtasks: updatedSubtasks,
+              progress: nextProgress,
               updatedAt: new Date().toISOString(),
             };
           }),
@@ -876,6 +926,7 @@ export const useConstructionStore = create<ConstructionStoreState>()(
 
       markMilestonePaid: (projectId, milestoneId) => {
         const { projects, currentUser } = get();
+        if (currentUser.role !== 'admin') return;
         const project = projects.find((p) => p.id === projectId);
         if (!project || !project.paymentMilestones) return;
 
@@ -935,6 +986,58 @@ export const useConstructionStore = create<ConstructionStoreState>()(
         };
 
         set((state) => ({ messages: [...state.messages, newMessage] }));
+
+        // Notify related users (except the sender) — dùng get().addNotification
+        // như các action khác; addNotification không tự ghi audit log.
+        if (projectId.startsWith('direct-')) {
+          const rest = projectId.slice('direct-'.length);
+          const knownIds = get().users.map((u) => u.id);
+          let participantIds: string[] = [];
+          for (const idA of knownIds) {
+            if (rest.startsWith(`${idA}-`)) {
+              const idB = rest.slice(idA.length + 1);
+              if (knownIds.includes(idB)) {
+                participantIds = [idA, idB];
+                break;
+              }
+            }
+          }
+          if (participantIds.length === 0) {
+            participantIds = knownIds.filter((id) => rest.includes(id));
+          }
+          participantIds
+            .filter((id) => id !== currentUser.id)
+            .forEach((recipientId) => {
+              get().addNotification({
+                userId: recipientId,
+                title: 'Tin nhắn mới',
+                message: `${currentUser.name} đã gửi tin nhắn: "${content}"`,
+                type: 'chat_message',
+                link: '/messages',
+              });
+            });
+        } else {
+          const project = get().projects.find((p) => p.id === projectId);
+          if (project) {
+            const recipientIds = new Set<string>([
+              ...(project.memberIds || []),
+              ...(project.leaderIds || []),
+            ]);
+            if (project.managerId) {
+              recipientIds.add(project.managerId);
+            }
+            recipientIds.delete(currentUser.id);
+            recipientIds.forEach((recipientId) => {
+              get().addNotification({
+                userId: recipientId,
+                title: 'Tin nhắn mới trong dự án',
+                message: `${currentUser.name} đã gửi tin nhắn tại "${project.name}": "${content}"`,
+                type: 'chat_message',
+                link: `/projects/${projectId}?tab=chat`,
+              });
+            });
+          }
+        }
       },
 
       getProjectMessages: (projectId) => {
@@ -997,6 +1100,7 @@ export const useConstructionStore = create<ConstructionStoreState>()(
         auditLogs: state.auditLogs,
         theme: state.theme,
         isTwoFactorSimulated: state.isTwoFactorSimulated,
+        isAuthenticated: state.isAuthenticated,
       }),
     }
   )

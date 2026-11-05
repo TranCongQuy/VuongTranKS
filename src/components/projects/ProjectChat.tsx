@@ -11,7 +11,6 @@ interface ProjectChatProps {
 
 export function ProjectChat({ projectId }: ProjectChatProps) {
   const [inputText, setInputText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const currentUser = useConstructionStore((s) => s.currentUser);
@@ -36,14 +35,6 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
     const text = inputText;
     setInputText('');
     sendMessage(projectId, text);
-
-    // Simulate typing indicator from other members
-    if (currentUser.role === 'admin') {
-      setTimeout(() => setIsTyping(true), 800);
-      setTimeout(() => {
-        setIsTyping(false);
-      }, 3000);
-    }
   };
 
   const getRoleBadge = (role: string) => {
@@ -163,16 +154,6 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
               </div>
             );
           })
-        )}
-
-        {/* Typing indicator simulation */}
-        {isTyping && (
-          <div className="flex items-center gap-2 text-xs text-slate-400 italic py-1">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-bounce" />
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-bounce [animation-delay:0.2s]" />
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-bounce [animation-delay:0.4s]" />
-            <span className="text-[11px]">Thầy Nguyễn Văn Tuấn Kiệt đang nhập ý kiến...</span>
-          </div>
         )}
 
         <div ref={messagesEndRef} />

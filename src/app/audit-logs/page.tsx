@@ -58,7 +58,7 @@ export default function AuditLogsPage() {
               Nhật ký Hoạt động Công trình
             </h1>
             <p className="text-xs text-slate-400 mt-0.5">
-              Bản ghi bất biến ghi nhận mọi thao tác giao việc, nghiệm thu, chỉnh sửa và cấp quyền
+              Ghi nhận mọi thao tác giao việc, nghiệm thu, chỉnh sửa và cấp quyền (bản demo: lưu trong trình duyệt)
             </p>
           </div>
 

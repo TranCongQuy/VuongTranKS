@@ -30,7 +30,7 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
   const [progress, setProgress] = useState(task ? task.progress : 50);
   const [note, setNote] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [isProcessingFiles, setIsProcessingFiles] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -59,85 +59,85 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
 
     setErrorMessage(null);
     const newAttachmentsList: Attachment[] = [];
+    const errors: string[] = [];
+    const MAX_SIZE_BYTES = 1.5 * 1024 * 1024; // Demo: giới hạn 1,5MB cho mọi tệp (ảnh & video) để data URL persist được trong localStorage
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    setIsProcessingFiles(true);
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
 
-      // 1. Kiểm tra định dạng: Chỉ nhận ảnh và video
-      if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-        const error = `Tệp "${file.name}" không hợp lệ. Hệ thống chỉ chấp nhận hình ảnh hoặc video clip minh chứng kết quả.`;
-        setErrorMessage(error);
-        toast.error(error);
-        return;
-      }
-
-      // 2. Kiểm tra dung lượng tối đa 300MB
-      const maxSizeBytes = 300 * 1024 * 1024;
-      if (file.size > maxSizeBytes) {
-        const error = `Tệp "${file.name}" dung lượng ${(file.size / (1024 * 1024)).toFixed(1)}MB vượt quá giới hạn cho phép (Tối đa 300MB).`;
-        setErrorMessage(error);
-        toast.error(error);
-        return;
-      }
-
-      // 3. Kiểm tra thời lượng video tối đa 10 phút (600s)
-      let duration: number | undefined;
-      if (file.type.startsWith('video/')) {
-        try {
-          const videoDuration = await new Promise<number>((resolve, reject) => {
-            const videoElem = document.createElement('video');
-            videoElem.preload = 'metadata';
-            videoElem.onloadedmetadata = () => {
-              window.URL.revokeObjectURL(videoElem.src);
-              resolve(videoElem.duration);
-            };
-            videoElem.onerror = () => reject('Không thể đọc thông tin video');
-            videoElem.src = URL.createObjectURL(file);
-          });
-
-          if (videoDuration > 600.5) {
-            const error = `Video "${file.name}" dài ${Math.round(videoDuration / 60)} phút. Quy định video hiện trường tối đa 10 phút để đảm bảo truyền tải ổn định.`;
-            setErrorMessage(error);
-            toast.error(error);
-            return;
-          }
-          duration = Math.round(videoDuration);
-        } catch {
-          // If browser cannot compute metadata locally, allow file with safe duration
-          duration = 180;
+        // 1. Kiểm tra định dạng: Chỉ nhận ảnh và video
+        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+          const error = `Tệp "${file.name}" không hợp lệ. Hệ thống chỉ chấp nhận hình ảnh hoặc video clip minh chứng kết quả.`;
+          errors.push(error);
+          continue;
         }
-      }
 
-      // Create object URL or preview
-      const previewUrl = URL.createObjectURL(file);
-      const newAtt: Attachment = {
-        id: `att-upload-${Date.now()}-${i}`,
-        taskId: task.id,
-        projectId: task.projectId,
-        type: file.type.startsWith('video/') ? 'video' : 'image',
-        name: file.name,
-        size: file.size,
-        duration,
-        url: previewUrl,
-        uploadedBy: currentUser.id,
-        createdAt: new Date().toISOString(),
-      };
-      newAttachmentsList.push(newAtt);
+        // 2. Kiểm tra dung lượng tối đa 1,5MB/file — file lớn hơn bị bỏ qua
+        if (file.size > MAX_SIZE_BYTES) {
+          const error = `"${file.name}": Ảnh vượt quá 1,5MB, vui lòng nén hoặc chọn ảnh nhỏ hơn`;
+          errors.push(error);
+          continue;
+        }
+
+        // 3. Đọc tệp thật bằng FileReader thành Data URL (persist được qua localStorage, không vỡ sau reload như blob URL)
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('Không thể đọc tệp'));
+          reader.readAsDataURL(file);
+        });
+
+        // 4. Kiểm tra thời lượng video tối đa 10 phút (600s) — dùng Data URL, không dùng object URL
+        let duration: number | undefined;
+        if (file.type.startsWith('video/')) {
+          try {
+            const videoDuration = await new Promise<number>((resolve, reject) => {
+              const videoElem = document.createElement('video');
+              videoElem.preload = 'metadata';
+              videoElem.onloadedmetadata = () => resolve(videoElem.duration);
+              videoElem.onerror = () => reject('Không thể đọc thông tin video');
+              videoElem.src = dataUrl;
+            });
+
+            if (videoDuration > 600.5) {
+              const error = `Video "${file.name}" dài ${Math.round(videoDuration / 60)} phút. Quy định video hiện trường tối đa 10 phút để đảm bảo truyền tải ổn định.`;
+              errors.push(error);
+              continue;
+            }
+            duration = Math.round(videoDuration);
+          } catch {
+            duration = 180;
+          }
+        }
+
+        const newAtt: Attachment = {
+          id: `att-upload-${Date.now()}-${i}`,
+          taskId: task.id,
+          projectId: task.projectId,
+          type: file.type.startsWith('video/') ? 'video' : 'image',
+          name: file.name,
+          size: file.size,
+          duration,
+          url: dataUrl,
+          uploadedBy: currentUser.id,
+          createdAt: new Date().toISOString(),
+        };
+        newAttachmentsList.push(newAtt);
+      }
+    } finally {
+      setIsProcessingFiles(false);
     }
 
-    // Fake upload progress simulation
-    setUploadProgress(15);
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev === null || prev >= 100) {
-          clearInterval(interval);
-          setAttachments((curr) => [...curr, ...newAttachmentsList]);
-          setTimeout(() => setUploadProgress(null), 400);
-          return 100;
-        }
-        return prev + 25;
-      });
-    }, 120);
+    if (errors.length > 0) {
+      const joined = errors.join(' ');
+      setErrorMessage(joined);
+      toast.error(joined);
+    }
+    if (newAttachmentsList.length > 0) {
+      setAttachments((curr) => [...curr, ...newAttachmentsList]);
+    }
 
     // reset input
     e.target.value = '';
@@ -424,7 +424,7 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
               {/* Attachments Upload Section */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
-                  Đính kèm ảnh / video minh chứng (Tối đa 50MB, video ≤ 10s)
+                  Đính kèm ảnh / video minh chứng (Tối đa 1,5MB/tệp — demo, video ≤ 10 phút)
                 </label>
 
                 {/* Hidden File Inputs */}
@@ -471,21 +471,12 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
                   </button>
                 </div>
 
-                {/* Simulated upload progress */}
-                {uploadProgress !== null && (
+                {/* Trạng thái đọc tệp thật (FileReader) — không dùng % giả */}
+                {isProcessingFiles && (
                   <div className="mt-3 p-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-semibold text-slate-700 dark:text-slate-300">
-                        Đang xử lý tệp tin...
-                      </span>
-                      <span className="font-mono font-bold text-amber-500">{uploadProgress}%</span>
-                    </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                      <div
-                        className="bg-amber-500 h-full transition-all duration-150"
-                        style={{ width: `${uploadProgress}%` }}
-                      />
-                    </div>
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Đang xử lý tệp...
+                    </span>
                   </div>
                 )}
 

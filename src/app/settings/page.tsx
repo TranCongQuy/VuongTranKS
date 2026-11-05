@@ -20,6 +20,7 @@ export default function SettingsPage() {
   const isTwoFactorSimulated = useConstructionStore((s) => s.isTwoFactorSimulated);
   const toggleTwoFactor = useConstructionStore((s) => s.toggleTwoFactor);
   const resetDemoData = useConstructionStore((s) => s.resetDemoData);
+  const projects = useConstructionStore((s) => s.projects);
 
   const handleReset = () => {
     if (confirm('Bạn có chắc chắn muốn đặt lại toàn bộ dữ liệu mẫu (dự án, task, nhật ký)?')) {
@@ -183,7 +184,7 @@ export default function SettingsPage() {
                 Đặt lại toàn bộ dữ liệu demo về trạng thái ban đầu
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                Xóa tất cả thay đổi thử nghiệm và nạp lại 4 dự án, các đầu việc mẫu và minh chứng
+                Xóa tất cả thay đổi thử nghiệm và nạp lại {projects.length} dự án, các đầu việc mẫu và minh chứng
                 gốc của Thầy Trần Quốc Vương, Thầy Nguyễn Văn Tuấn Kiệt và Ban Lãnh đạo.
               </p>
             </div>
@@ -201,12 +202,13 @@ export default function SettingsPage() {
         {/* 4. Architecture Note */}
         <div className="p-5 rounded-2xl bg-slate-100 dark:bg-slate-800/40 text-xs text-slate-500 dark:text-slate-400 space-y-1">
           <strong className="block font-bold text-slate-700 dark:text-slate-300">
-            Kiến trúc sẵn sàng mở rộng (Backend-Ready):
+            Lưu trữ dữ liệu ở bản demo hiện tại:
           </strong>
           <p>
-            Hệ thống tuân thủ mô hình phân tách dữ liệu qua Store/Service. Khi kết nối cơ sở dữ
-            liệu thật (Supabase / PostgreSQL), chỉ cần thay đổi phần implementation trong Store mà
-            không cần viết lại giao diện người dùng.
+            Bản demo hiện tại lưu toàn bộ dữ liệu trong localStorage của trình duyệt — mỗi trình
+            duyệt / mỗi thiết bị có một bộ dữ liệu riêng, không dùng chung và không có đăng nhập
+            thật phía máy chủ. Lộ trình đợt sau sẽ nối Supabase để dùng chung dữ liệu giữa các
+            thiết bị và có đăng nhập thật.
           </p>
         </div>
       </div>

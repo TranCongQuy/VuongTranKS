@@ -19,6 +19,8 @@ import {
   Building2,
   Clock,
   ChevronRight,
+  MoreHorizontal,
+  Pencil,
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { useConstructionStore } from '@/lib/store';
@@ -39,12 +41,15 @@ export default function ProjectsPage() {
   const calculateProjectProgress = useConstructionStore((s) => s.calculateProjectProgress);
   const addProject = useConstructionStore((s) => s.addProject);
   const deleteProject = useConstructionStore((s) => s.deleteProject);
+  const updateProject = useConstructionStore((s) => s.updateProject);
 
   const [viewMode, setViewMode] = useState<'grid' | 'kanban' | 'contracts' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [campusFilter, setCampusFilter] = useState<'all' | 'cs2' | 'tranphu'>('all');
   const [stepFilter, setStepFilter] = useState<number | 'all'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
 
   // New Project Form State
   const [formData, setFormData] = useState({
@@ -67,6 +72,8 @@ export default function ProjectsPage() {
   });
 
   const visibleProjects = getVisibleProjects();
+  const cs2Count = visibleProjects.filter((p) => p.campus === 'cs2' || !p.campus).length;
+  const tranphuCount = visibleProjects.filter((p) => p.campus === 'tranphu').length;
 
   const filteredProjects = visibleProjects.filter((p) => {
     const matchesSearch =
@@ -85,6 +92,29 @@ export default function ProjectsPage() {
     e.preventDefault();
     if (!formData.name.trim() || !formData.code.trim()) {
       toast.error('Vui lòng điền đầy đủ Mã gói thầu và Tên hạng mục!');
+      return;
+    }
+
+    if (editingProjectId) {
+      updateProject(editingProjectId, {
+        code: formData.code,
+        name: formData.name,
+        description: formData.description,
+        location: formData.location,
+        category: formData.category,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        status: formData.status,
+        workflowStep: formData.workflowStep,
+        campus: formData.campus,
+        organization: formData.organization,
+        contractor: formData.contractor,
+        budget: formData.budget,
+        budgetTotal: formData.budgetTotal,
+      });
+      toast.success('Đã cập nhật gói thầu!');
+      setShowCreateModal(false);
+      setEditingProjectId(null);
       return;
     }
 
@@ -115,6 +145,30 @@ export default function ProjectsPage() {
       deleteProject(id);
       toast.success('Đã xóa gói thầu!');
     }
+  };
+
+  const handleEdit = (proj: (typeof visibleProjects)[number]) => {
+    setEditingProjectId(proj.id);
+    setFormData({
+      code: proj.code,
+      name: proj.name,
+      description: proj.description || '',
+      location: proj.location,
+      category: proj.category,
+      startDate: proj.startDate,
+      endDate: proj.endDate,
+      status: proj.status,
+      workflowStep: (proj.workflowStep || 1) as WorkflowStepId,
+      campus: (proj.campus === 'tranphu' ? 'tranphu' : 'cs2') as 'cs2' | 'tranphu',
+      organization: proj.organization || '',
+      contractor: proj.contractor || '',
+      budget: proj.budget,
+      budgetTotal: proj.budgetTotal || 0,
+      leaderIds: proj.leaderIds || [],
+      memberIds: proj.memberIds || [],
+    });
+    setOpenMenuId(null);
+    setShowCreateModal(true);
   };
 
   // Group projects by 9 workflow steps for Kanban view
@@ -150,7 +204,7 @@ export default function ProjectsPage() {
               )}
             </div>
             <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              16 Gói thầu Cải tạo & Sửa chữa Campus
+              {filteredProjects.length} / {visibleProjects.length} Gói thầu Cải tạo & Sửa chữa Campus
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Báo cáo phân rã đầu mục công việc, theo dõi tiến độ thực tế và kiểm soát dòng tiền hợp đồng thi công
@@ -160,7 +214,7 @@ export default function ProjectsPage() {
           <div className="flex items-center gap-2.5">
             {currentUser.role === 'admin' && (
               <button
-                onClick={() => setShowCreateModal(true)}
+                onClick={() => { setEditingProjectId(null); setShowCreateModal(true); }}
                 className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2 cursor-pointer"
               >
                 <Plus className="w-4 h-4 stroke-[2.5]" />
@@ -183,7 +237,7 @@ export default function ProjectsPage() {
               }`}
             >
               <LayoutGrid className="w-4 h-4" />
-              <span>Lưới 16 Gói thầu ({filteredProjects.length})</span>
+              <span>Lưới Gói thầu ({filteredProjects.length}/{visibleProjects.length})</span>
             </button>
 
             <button
@@ -244,7 +298,7 @@ export default function ProjectsPage() {
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
               }`}
             >
-              Cơ sở 2 (15 gói)
+              Cơ sở 2 ({cs2Count} gói)
             </button>
             <button
               onClick={() => setCampusFilter('tranphu')}
@@ -254,13 +308,13 @@ export default function ProjectsPage() {
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
               }`}
             >
-              176 Trần Phú (1 gói)
+              176 Trần Phú ({tranphuCount} gói)
             </button>
           </div>
         </div>
 
-        {/* Search & Quick Step Filter */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        {/* Search & Quick Step Filter — gom trong 1 thanh lọc */}
+        <div className="flex flex-col xl:flex-row xl:items-center gap-3 p-3 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="relative flex-1">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -268,7 +322,7 @@ export default function ProjectsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm theo tên hạng mục, nhà thầu (TBGroup, PNB Home, Toàn Cầu...), mã gói thầu..."
-              className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-amber-500 shadow-xs"
+              className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-amber-500 shadow-xs"
             />
           </div>
 
@@ -316,7 +370,8 @@ export default function ProjectsPage() {
               return (
                 <div
                   key={p.id}
-                  className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col group"
+                  onClick={() => router.push(`/projects/${p.id}`)}
+                  className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col group cursor-pointer"
                 >
                   {/* Card Cover */}
                   <div className="relative h-44 w-full bg-slate-900 overflow-hidden">
@@ -409,22 +464,56 @@ export default function ProjectsPage() {
                       </div>
 
                       <div className="flex items-center gap-1.5">
-                        {currentUser.role === 'admin' && (
-                          <button
-                            onClick={() => handleDelete(p.id, p.name)}
-                            title="Xóa gói thầu"
-                            className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        <Link
-                          href={`/projects/${p.id}`}
-                          className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-amber-500 dark:hover:bg-amber-400 dark:text-slate-950 text-xs font-bold transition-all flex items-center gap-1"
-                        >
-                          <span>Chi tiết</span>
+                        <span className="text-[11px] font-semibold text-slate-400 group-hover:text-amber-500 flex items-center gap-1">
+                          Bấm thẻ để xem chi tiết
                           <ArrowRight className="w-3.5 h-3.5" />
-                        </Link>
+                        </span>
+                        {currentUser.role === 'admin' && (
+                          <div className="relative">
+                            <button
+                              type="button"
+                              aria-label="Thao tác gói thầu"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                setOpenMenuId(openMenuId === p.id ? null : p.id);
+                              }}
+                              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            >
+                              <MoreHorizontal className="w-4 h-4" />
+                            </button>
+                            {openMenuId === p.id && (
+                              <div
+                                className="absolute right-0 bottom-full mb-1.5 w-36 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl z-20 overflow-hidden"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    handleEdit(p);
+                                  }}
+                                  className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" /> Sửa
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    setOpenMenuId(null);
+                                    handleDelete(p.id, p.name);
+                                  }}
+                                  className="w-full px-3 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" /> Xoá
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -444,10 +533,10 @@ export default function ProjectsPage() {
                 <Kanban className="w-4 h-4 text-amber-600" />
                 <span>
                   Bảng điều hướng quy trình 9 bước chuẩn hóa của Trường Đại học Phú Xuân.
-                  Hiển thị vị trí thực tế của toàn bộ 16 gói thầu.
+                  Hiển thị vị trí thực tế của toàn bộ {filteredProjects.length} gói thầu.
                 </span>
               </span>
-              <span className="text-[11px] font-bold">16 gói thầu</span>
+              <span className="text-[11px] font-bold">{filteredProjects.length} gói thầu</span>
             </div>
 
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin">
@@ -542,7 +631,7 @@ export default function ProjectsPage() {
                 <div className="font-tabular font-black text-xl text-amber-600 dark:text-amber-400 mt-1">
                   {formatCurrencyVN(totalSignedValue)}
                 </div>
-                <span className="text-[11px] text-slate-500 mt-0.5 block">5 hợp đồng thi công chính thức</span>
+                <span className="text-[11px] text-slate-500 mt-0.5 block">{signedProjects.reduce((n, p) => n + (p.contracts?.length || 0), 0)} hợp đồng thi công chính thức</span>
               </div>
 
               <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
@@ -697,14 +786,14 @@ export default function ProjectsPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
             <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-2xl animate-in zoom-in-95">
               <button
-                onClick={() => setShowCreateModal(false)}
+                onClick={() => { setShowCreateModal(false); setEditingProjectId(null); }}
                 className="absolute top-4 right-4 p-2 rounded-xl text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
 
               <h3 className="text-lg font-black text-slate-900 dark:text-white mb-1">
-                Tạo Gói thầu Cải tạo Mới
+                {editingProjectId ? 'Sửa Gói thầu Cải tạo' : 'Tạo Gói thầu Cải tạo Mới'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
                 Điền thông tin hạng mục công trình theo quy chuẩn 9 bước của Đại học Phú Xuân
@@ -818,7 +907,7 @@ export default function ProjectsPage() {
                     type="submit"
                     className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-md shadow-amber-500/20"
                   >
-                    Tạo gói thầu
+                    {editingProjectId ? 'Lưu thay đổi' : 'Tạo gói thầu'}
                   </button>
                 </div>
               </form>

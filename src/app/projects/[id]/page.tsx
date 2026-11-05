@@ -1,5 +1,6 @@
 'use client';
 
+
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -9,7 +10,6 @@ import {
   LayoutGrid,
   List,
   CalendarRange,
-  Image as ImageIcon,
   PlusCircle,
   Lock,
   ArrowLeft,
@@ -52,8 +52,8 @@ import {
 import { formatDateVN, formatDateTimeVN, formatCurrencyVN } from '@/lib/utils';
 import { toast } from 'sonner';
 
-// 3 Core PRM Executive Streams
-type ProjectTab = 'tasks' | 'financial' | 'media';
+// 7 PRM tabs
+type ProjectTab = 'overview' | 'tasks' | 'media' | 'incidents' | 'financial' | 'chat' | 'access';
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -72,18 +72,28 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const getProjectIncidents = useConstructionStore((s) => s.getProjectIncidents);
   const updateProjectWorkflowStep = useConstructionStore((s) => s.updateProjectWorkflowStep);
   const toggleProjectChecklistTask = useConstructionStore((s) => s.toggleProjectChecklistTask);
+  const allUsers = useConstructionStore((s) => s.users);
+  const toggleLeaderAccess = useConstructionStore((s) => s.toggleLeaderAccess);
 
   const initialTabParam = searchParams.get('tab');
   const initialTaskId = searchParams.get('taskId');
 
-  // Normalize tab param to 3 Clean PRM tabs
+  // Map query param (kể cả param cũ) sang 7 tab mới:
+  // tasks->tasks, financial->financial, gallery/media->media, chat->chat,
+  // members/activity->access (chỉ admin, còn lại về overview), mặc định -> overview
   const getResolvedTab = (tab: string | null): ProjectTab => {
-    if (!tab) return 'tasks';
+    if (!tab) return 'overview';
+    if (tab === 'tasks') return 'tasks';
+    if (tab === 'overview') return 'overview';
     if (tab === 'financial') return 'financial';
-    if (tab === 'gallery' || tab === 'chat' || tab === 'members' || tab === 'media' || tab === 'activity') {
-      return 'media';
+    if (tab === 'incidents') return 'incidents';
+    if (tab === 'chat') return 'chat';
+    if (tab === 'access') return currentUser.role === 'admin' ? 'access' : 'overview';
+    if (tab === 'gallery' || tab === 'media') return 'media';
+    if (tab === 'members' || tab === 'activity') {
+      return currentUser.role === 'admin' ? 'access' : 'overview';
     }
-    return 'tasks';
+    return 'overview';
   };
 
   const [activeTab, setActiveTab] = useState<ProjectTab>(getResolvedTab(initialTabParam));
@@ -120,6 +130,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     return () => clearTimeout(timer);
   }, [initialTaskId, project, currentUser.role, getProjectTasks]);
 
+  // Guard: tab Phân quyền chỉ dành cho admin — role khác bị đưa về Tổng quan
+  // (điều chỉnh state ngay trong render theo pattern React khuyến nghị, thay cho useEffect)
+  if (activeTab === 'access' && currentUser.role !== 'admin') {
+    setActiveTab('overview');
+  }
+
   // Unauthorized view
   if (!project || !hasAccess) {
     return (
@@ -154,6 +170,17 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const isAdmin = currentUser.role === 'admin';
   const isAssignee = currentUser.role === 'assignee';
   const catConfig = project.category ? CATEGORY_CONFIG[project.category] : null;
+
+  // Lãnh đạo thật của dự án (theo leaderIds) + thành viên tóm tắt cho tab Tổng quan / Phân quyền
+  const projectLeaders = (project.leaderIds || [])
+    .map((id) => allUsers.find((u) => u.id === id))
+    .filter((u): u is NonNullable<typeof u> => Boolean(u));
+  const projectLeaderNames = projectLeaders.map((u) => u.name);
+  const allLeaders = allUsers.filter((u) => u.role === 'leader');
+  const projectMemberNames = (project.memberIds || [])
+    .map((id) => allUsers.find((u) => u.id === id))
+    .filter((u): u is NonNullable<typeof u> => Boolean(u))
+    .map((u) => u.name);
 
   // Financial milestones calculations
   const milestones = project.paymentMilestones || [];
@@ -315,7 +342,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               {/* Lãnh đạo (Leader): Fast Directive Button */}
               {isLeader && (
                 <button
-                  onClick={() => setActiveTab('media')}
+                  onClick={() => setActiveTab('overview')}
                   className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer"
                 >
                   <Sparkles className="w-4 h-4" />
@@ -363,60 +390,63 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         </div>
 
         {/* ========================================================= */}
-        {/* 3 CLEAN PRM TABS NAVIGATION                               */}
+        {/* 7 PRM TABS NAVIGATION — cuộn ngang trên mobile           */}
         {/* ========================================================= */}
-        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800">
-          <button
-            onClick={() => setActiveTab('tasks')}
-            className={`px-5 py-3 rounded-t-2xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2.5 border-b-2 ${
-              activeTab === 'tasks'
-                ? 'border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-500/10'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            <LayoutGrid className="w-4 h-4" />
-            <span>1. Tiến độ & Công việc</span>
-            <span className="text-[11px] px-2 py-0.5 rounded-full font-mono font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-              {projectTasks.length} việc
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('financial')}
-            className={`px-5 py-3 rounded-t-2xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2.5 border-b-2 ${
-              activeTab === 'financial'
-                ? 'border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-500/10'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            <DollarSign className="w-4 h-4" />
-            <span>2. Hợp đồng & Dòng tiền</span>
-            <span className="text-[11px] px-2 py-0.5 rounded-full font-mono font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
-              {paidPercent}% nộp
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('media')}
-            className={`px-5 py-3 rounded-t-2xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2.5 border-b-2 ${
-              activeTab === 'media'
-                ? 'border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-500/10'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            <ImageIcon className="w-4 h-4" />
-            <span>3. Hiện trường & Chỉ đạo</span>
-            {project.directive && (
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            )}
-          </button>
+        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 overflow-x-auto whitespace-nowrap">
+          {(
+            [
+              { id: 'overview', label: 'Tổng quan' },
+              { id: 'tasks', label: `Công việc (${projectTasks.length})` },
+              { id: 'media', label: 'Báo cáo & Minh chứng' },
+              { id: 'incidents', label: `Sự cố (${projectIncidents.length})` },
+              { id: 'financial', label: `Dòng tiền (${paidPercent}% nộp)` },
+              { id: 'chat', label: 'Trao đổi' },
+              ...(isAdmin ? [{ id: 'access', label: 'Phân quyền' }] : []),
+            ] as { id: ProjectTab; label: string }[]
+          ).map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-3 rounded-t-2xl font-bold text-xs sm:text-sm transition-all border-b-2 shrink-0 ${
+                activeTab === tab.id
+                  ? 'border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-500/10'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {/* ========================================================= */}
-        {/* TRỤ CỘT 1: TIẾN ĐỘ & NHIỆM VỤ THỰC ĐỊA                     */}
-        {/* ========================================================= */}
-        {activeTab === 'tasks' && (
+        {/* TAB: TỔNG QUAN */}
+        {activeTab === 'overview' && (
           <div className="space-y-6">
+            {/* Mô tả & thông tin hợp đồng / thành viên tóm tắt */}
+            <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+              <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">Tổng quan gói thầu</h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                {project.description}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <span>Đơn vị tổ chức: <strong className="text-slate-800 dark:text-slate-200">{project.organization}</strong></span>
+                <span>Nhà thầu: <strong className="text-slate-800 dark:text-slate-200">{project.contractor || 'Chưa chọn nhà thầu'}</strong></span>
+                <span>Địa điểm: <strong className="text-slate-800 dark:text-slate-200">{project.location}</strong></span>
+                <span>Kinh phí: <strong className="text-slate-800 dark:text-slate-200">{project.budget}</strong></span>
+                <span>
+                  Lãnh đạo theo dõi:{' '}
+                  <strong className="text-slate-800 dark:text-slate-200">
+                    {projectLeaderNames.length > 0 ? projectLeaderNames.join(', ') : 'Chưa cấp quyền'}
+                  </strong>
+                </span>
+                <span>
+                  Thành viên thực hiện:{' '}
+                  <strong className="text-slate-800 dark:text-slate-200">
+                    {projectMemberNames.length > 0 ? projectMemberNames.join(', ') : '—'}
+                  </strong>
+                </span>
+              </div>
+            </div>
+
             {/* 9-Step Standard Workflow Stepper */}
             <WorkflowStepper
               currentStep={currentStepNum}
@@ -437,6 +467,163 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               canEdit={isAdmin || isAssignee}
             />
 
+            {/* Thông tin hợp đồng (tóm tắt) */}
+            <ProjectContractsCard contracts={project.contracts} technicalNotes={project.technicalNotes} />
+
+            {/* Leadership Directive & Evaluation Panel */}
+            <div className="p-5 sm:p-6 rounded-3xl bg-linear-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100">
+                      Ý kiến Định hướng & Chỉ đạo của Ban Giám hiệu
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {projectLeaderNames.length > 0
+                        ? `${projectLeaderNames.join(' & ')} trực tiếp theo dõi và chỉ đạo`
+                        : 'Ban lãnh đạo được cấp quyền theo dõi và chỉ đạo'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Leader Evaluation Badge if evaluated */}
+                {project.evaluation && (
+                  <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs">
+                    <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                    <div className="text-xs">
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        Xếp loại:{' '}
+                        {project.evaluation.rating === 'excellent'
+                          ? 'Xuất sắc'
+                          : project.evaluation.rating === 'good'
+                          ? 'Đạt yêu cầu'
+                          : 'Cần tối ưu'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block">
+                        Đánh giá bởi {project.evaluation.evaluatedBy}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Directive Display */}
+              {project.directive && (
+                <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs shadow-xs">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-bold text-amber-600 dark:text-amber-400">
+                      {project.directive.authorName} ({project.directive.authorTitle})
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {formatDateTimeVN(project.directive.createdAt)}
+                    </span>
+                  </div>
+                  <p className="text-slate-700 dark:text-slate-300 italic leading-relaxed text-sm">
+                    &ldquo;{project.directive.content}&rdquo;
+                  </p>
+                </div>
+              )}
+
+              {/* Evaluation comment if any */}
+              {project.evaluation?.comment && (
+                <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-900 dark:text-emerald-200">
+                  <strong className="block font-semibold mb-0.5">Nhận xét chuyên môn của Lãnh đạo:</strong>
+                  {project.evaluation.comment}
+                </div>
+              )}
+
+              {/* Leader Actions: Quick Directive Box & Evaluation Form */}
+              {isLeader && (
+                <div className="pt-2 space-y-3">
+                  <form onSubmit={handleSubmitDirective} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={directiveInput}
+                      onChange={(e) => setDirectiveInput(e.target.value)}
+                      placeholder="Nhập ý kiến chỉ đạo mới cho Thầy Trần Quốc Vương và đội kỹ sư..."
+                      className="flex-1 px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-amber-500 shadow-xs"
+                    />
+                    <button
+                      type="submit"
+                      className="px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      Gửi chỉ đạo
+                    </button>
+                  </form>
+
+                  <div>
+                    {!showEvalForm ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowEvalForm(true)}
+                        className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
+                      >
+                        <Star className="w-3.5 h-3.5" />
+                        {project.evaluation ? 'Đánh giá lại gói thầu' : 'Chấm điểm / Đánh giá xếp loại gói thầu này'}
+                      </button>
+                    ) : (
+                      <form
+                        onSubmit={handleSubmitEvaluation}
+                        className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-3 text-xs shadow-xs"
+                      >
+                        <div className="font-bold text-slate-800 dark:text-slate-200">
+                          Đánh giá chất lượng thực hiện gói thầu:
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          {(['excellent', 'good', 'needs_improvement'] as const).map((r) => (
+                            <button
+                              key={r}
+                              type="button"
+                              onClick={() => setEvalRating(r)}
+                              className={`py-2 px-3 rounded-xl font-bold transition-all border ${
+                                evalRating === r
+                                  ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-xs'
+                                  : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                              }`}
+                            >
+                              {r === 'excellent' ? 'Xuất sắc' : r === 'good' ? 'Đạt yêu cầu' : 'Cần tối ưu'}
+                            </button>
+                          ))}
+                        </div>
+                        <textarea
+                          rows={2}
+                          value={evalComment}
+                          onChange={(e) => setEvalComment(e.target.value)}
+                          placeholder="Nhập nhận xét hoặc lưu ý chuyên môn của Ban Giám hiệu..."
+                          className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-xs"
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowEvalForm(false)}
+                            className="px-3 py-1.5 text-slate-500 hover:text-slate-700 text-xs cursor-pointer"
+                          >
+                            Hủy
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs cursor-pointer"
+                          >
+                            Lưu đánh giá
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+          </div>
+        )}
+
+        {/* TAB: CÔNG VIỆC */}
+        {activeTab === 'tasks' && (
+          <div className="space-y-6">
             {/* Tasks Management & View Modes */}
             <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -518,6 +705,34 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               )}
             </div>
 
+          </div>
+        )}
+
+        {/* TAB: BÁO CÁO & MINH CHỨNG */}
+        {activeTab === 'media' && (
+          <div className="space-y-6">
+            {/* Field Proof Gallery (Videos 10 mins & Photos) */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+                    Minh chứng Hiện trường (Video 10 phút & Ảnh nghiệm thu)
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Bằng chứng thực địa phục vụ công tác giám sát của Lãnh đạo và thanh quyết toán
+                  </p>
+                </div>
+              </div>
+
+              <ProjectGallery projectId={project.id} tasks={projectTasks} />
+            </div>
+
+          </div>
+        )}
+
+        {/* TAB: SỰ CỐ — tổng hợp toàn bộ sự cố của dự án (getProjectIncidents) */}
+        {activeTab === 'incidents' && (
+          <div className="space-y-6">
             {/* Incidents & Field Obstacles Integrated Section */}
             <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -897,189 +1112,78 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           </div>
         )}
 
-        {/* ========================================================= */}
-        {/* TRỤ CỘT 3: HIỆN TRƯỜNG & CHỈ ĐẠO LÃNH ĐẠO                 */}
-        {/* ========================================================= */}
-        {activeTab === 'media' && (
+        {/* TAB: TRAO ĐỔI */}
+        {activeTab === 'chat' && (
           <div className="space-y-6">
-            {/* Leadership Directive & Evaluation Panel */}
-            <div className="p-5 sm:p-6 rounded-3xl bg-linear-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100">
-                      Ý kiến Định hướng & Chỉ đạo của Ban Giám hiệu
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      TS. Hoàng Nhật Dũng & ThS. Nguyễn Du Tuấn trực tiếp theo dõi và chỉ đạo
-                    </p>
-                  </div>
-                </div>
-
-                {/* Leader Evaluation Badge if evaluated */}
-                {project.evaluation && (
-                  <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs">
-                    <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                    <div className="text-xs">
-                      <span className="font-bold text-slate-900 dark:text-white">
-                        Xếp loại:{' '}
-                        {project.evaluation.rating === 'excellent'
-                          ? 'Xuất sắc'
-                          : project.evaluation.rating === 'good'
-                          ? 'Đạt yêu cầu'
-                          : 'Cần tối ưu'}
-                      </span>
-                      <span className="text-[10px] text-slate-400 block">
-                        Đánh giá bởi {project.evaluation.evaluatedBy}
-                      </span>
-                    </div>
-                  </div>
-                )}
+            <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-amber-500" />
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                  Kênh Trao đổi Nội bộ Gói thầu
+                </h3>
               </div>
+              <ProjectChat projectId={project.id} />
+            </div>
+          </div>
+        )}
 
-              {/* Directive Display */}
-              {project.directive && (
-                <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs shadow-xs">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-bold text-amber-600 dark:text-amber-400">
-                      {project.directive.authorName} ({project.directive.authorTitle})
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      {formatDateTimeVN(project.directive.createdAt)}
-                    </span>
-                  </div>
-                  <p className="text-slate-700 dark:text-slate-300 italic leading-relaxed text-sm">
-                    &ldquo;{project.directive.content}&rdquo;
-                  </p>
-                </div>
-              )}
+        {/* TAB: PHÂN QUYỀN — chỉ admin */}
+        {activeTab === 'access' && isAdmin && (
+          <div className="space-y-6">
+            <ProjectMembers project={project} isReadOnly={false} />
 
-              {/* Evaluation comment if any */}
-              {project.evaluation?.comment && (
-                <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-900 dark:text-emerald-200">
-                  <strong className="block font-semibold mb-0.5">Nhận xét chuyên môn của Lãnh đạo:</strong>
-                  {project.evaluation.comment}
-                </div>
-              )}
-
-              {/* Leader Actions: Quick Directive Box & Evaluation Form */}
-              {isLeader && (
-                <div className="pt-2 space-y-3">
-                  <form onSubmit={handleSubmitDirective} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={directiveInput}
-                      onChange={(e) => setDirectiveInput(e.target.value)}
-                      placeholder="Nhập ý kiến chỉ đạo mới cho Thầy Trần Quốc Vương và đội kỹ sư..."
-                      className="flex-1 px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-amber-500 shadow-xs"
-                    />
-                    <button
-                      type="submit"
-                      className="px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
+            {/* Bảng phân quyền lãnh đạo theo dự án */}
+            <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+              <div>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                  Bảng phân quyền lãnh đạo — Dự án này
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Lãnh đạo chỉ xem được dự án được cấp quyền. Bật công tắc để cấp / thu hồi quyền xem dự án này cho từng lãnh đạo.
+                </p>
+              </div>
+              <div className="space-y-2.5">
+                {allLeaders.map((leader) => {
+                  const canView = (project.leaderIds || []).includes(leader.id);
+                  return (
+                    <div
+                      key={leader.id}
+                      className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex items-center justify-between gap-3"
                     >
-                      <Send className="w-3.5 h-3.5" />
-                      Gửi chỉ đạo
-                    </button>
-                  </form>
-
-                  <div>
-                    {!showEvalForm ? (
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-500 font-bold flex items-center justify-center text-xs shrink-0">
+                          {leader.avatar}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-xs text-slate-800 dark:text-slate-200 truncate">{leader.name}</div>
+                          <div className="text-[11px] text-slate-400 truncate">{leader.title}</div>
+                        </div>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => setShowEvalForm(true)}
-                        className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
+                        role="switch"
+                        aria-checked={canView}
+                        aria-label={`Được xem dự án này: ${leader.name}`}
+                        onClick={() => toggleLeaderAccess(project.id, leader.id, !canView)}
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                          canView ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
+                        }`}
                       >
-                        <Star className="w-3.5 h-3.5" />
-                        {project.evaluation ? 'Đánh giá lại gói thầu' : 'Chấm điểm / Đánh giá xếp loại gói thầu này'}
-                      </button>
-                    ) : (
-                      <form
-                        onSubmit={handleSubmitEvaluation}
-                        className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-3 text-xs shadow-xs"
-                      >
-                        <div className="font-bold text-slate-800 dark:text-slate-200">
-                          Đánh giá chất lượng thực hiện gói thầu:
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          {(['excellent', 'good', 'needs_improvement'] as const).map((r) => (
-                            <button
-                              key={r}
-                              type="button"
-                              onClick={() => setEvalRating(r)}
-                              className={`py-2 px-3 rounded-xl font-bold transition-all border ${
-                                evalRating === r
-                                  ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-xs'
-                                  : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                              }`}
-                            >
-                              {r === 'excellent' ? 'Xuất sắc' : r === 'good' ? 'Đạt yêu cầu' : 'Cần tối ưu'}
-                            </button>
-                          ))}
-                        </div>
-                        <textarea
-                          rows={2}
-                          value={evalComment}
-                          onChange={(e) => setEvalComment(e.target.value)}
-                          placeholder="Nhập nhận xét hoặc lưu ý chuyên môn của Ban Giám hiệu..."
-                          className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-xs"
+                        <span
+                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition ${
+                            canView ? 'translate-x-5' : 'translate-x-0'
+                          }`}
                         />
-                        <div className="flex justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setShowEvalForm(false)}
-                            className="px-3 py-1.5 text-slate-500 hover:text-slate-700 text-xs cursor-pointer"
-                          >
-                            Hủy
-                          </button>
-                          <button
-                            type="submit"
-                            className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs cursor-pointer"
-                          >
-                            Lưu đánh giá
-                          </button>
-                        </div>
-                      </form>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Field Proof Gallery (Videos 10 mins & Photos) */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
-                    Minh chứng Hiện trường (Video 10 phút & Ảnh nghiệm thu)
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Bằng chứng thực địa phục vụ công tác giám sát của Lãnh đạo và thanh quyết toán
-                  </p>
-                </div>
-              </div>
-
-              <ProjectGallery projectId={project.id} tasks={projectTasks} />
-            </div>
-
-            {/* Project Chat & Team Communication */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-amber-500" />
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-                      Kênh Trao đổi Nội bộ Gói thầu
-                    </h3>
-                  </div>
-                  <ProjectChat projectId={project.id} />
-                </div>
-              </div>
-
-              <div>
-                <ProjectMembers project={project} isReadOnly={isLeader} />
+                      </button>
+                      <span className={`text-[11px] font-bold w-24 text-right ${canView ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
+                        {canView ? 'Được xem dự án này' : 'Không được xem'}
+                      </span>
+                    </div>
+                  );
+                })}
+                {allLeaders.length === 0 && (
+                  <p className="text-xs text-slate-400">Chưa có tài khoản lãnh đạo nào trong hệ thống.</p>
+                )}
               </div>
             </div>
           </div>

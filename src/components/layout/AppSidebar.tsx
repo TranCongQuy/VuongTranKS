@@ -19,6 +19,7 @@ import {
   Target,
   Sun,
   Moon,
+  MessageSquare,
 } from 'lucide-react';
 import { useConstructionStore } from '@/lib/store';
 
@@ -28,10 +29,16 @@ export function AppSidebar({ onClose }: { onClose?: () => void }) {
   const getOverdueTasks = useConstructionStore((s) => s.getOverdueTasks);
   const getPendingApprovalTasks = useConstructionStore((s) => s.getPendingApprovalTasks);
   const getUserTasks = useConstructionStore((s) => s.getUserTasks);
+  const getVisibleProjects = useConstructionStore((s) => s.getVisibleProjects);
+  const notifications = useConstructionStore((s) => s.notifications);
 
   const overdueCount = getOverdueTasks().length;
   const pendingCount = getPendingApprovalTasks().length;
   const myTasksCount = getUserTasks(currentUser.id).length;
+  const visibleProjectsCount = getVisibleProjects().length;
+  const unreadChatCount = notifications.filter(
+    (n) => n.userId === currentUser.id && n.type === 'chat_message' && !n.read
+  ).length;
   const theme = useConstructionStore((s) => s.theme);
   const toggleTheme = useConstructionStore((s) => s.toggleTheme);
 
@@ -76,7 +83,7 @@ export function AppSidebar({ onClose }: { onClose?: () => void }) {
           ? 'Dự án được giám sát'
           : currentUser.role === 'assignee'
           ? 'Dự án tham gia'
-          : '16 Gói thầu PXU',
+          : `${visibleProjectsCount} Dự án PXU`,
       href: '/projects',
       icon: Layers,
       show: true,
@@ -86,8 +93,16 @@ export function AppSidebar({ onClose }: { onClose?: () => void }) {
       label: 'Việc của tôi',
       href: '/my-tasks',
       icon: CheckSquare,
-      show: currentUser.role === 'assignee',
+      show: currentUser.role === 'assignee' || currentUser.role === 'admin',
       badge: myTasksCount > 0 ? myTasksCount : null,
+      badgeColor: 'bg-amber-500 text-slate-950 font-bold',
+    },
+    {
+      label: 'Trao đổi',
+      href: '/messages',
+      icon: MessageSquare,
+      show: true,
+      badge: unreadChatCount > 0 ? unreadChatCount : null,
       badgeColor: 'bg-amber-500 text-slate-950 font-bold',
     },
     {
@@ -138,12 +153,12 @@ export function AppSidebar({ onClose }: { onClose?: () => void }) {
             </div>
             <div>
               <div className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
-                <span>TASKMASTER</span>
+                <span>QUẢN LÝ DỰ ÁN</span>
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                  PRO
+                  PXU
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Quản trị Mục tiêu & Giao việc</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Giao việc & Giám sát Công trình</p>
             </div>
           </Link>
         </div>
@@ -246,12 +261,11 @@ export function AppSidebar({ onClose }: { onClose?: () => void }) {
 
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-            Đồng bộ thời gian thực
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            Dữ liệu demo • Lưu trên trình duyệt
           </span>
-          <span className="font-mono text-slate-400">v4.0.0</span>
         </div>
-        <div className="text-[10px] text-slate-400">Đại học Phú Xuân • Quản trị Mục tiêu</div>
+        <div className="text-[10px] text-slate-400">Đại học Phú Xuân • Giao việc & Giám sát Công trình</div>
       </div>
     </aside>
   );

@@ -196,9 +196,52 @@ h1, h2, h3, .font-display {
   }
 }
 
+/* ===== Tài liệu in A4 chuyên dụng =====
+   Dùng cho các route in riêng (không bọc AppShell):
+   /reports/print (báo cáo tổng hợp) và /reports/minutes/[taskId] (biên bản).
+   Lề in 18mm theo chuẩn văn bản hành chính được đặt ở @page mặc định trong
+   khối @media print bên dưới (không dùng named page vì Chrome sinh thêm
+   trang trắng cuối khi tài liệu nằm trong nhóm trang đặt tên riêng). */
+.print-doc {
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.print-doc .doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.print-doc .doc-table th,
+.print-doc .doc-table td {
+  border: 1px solid #94a3b8;
+  padding: 5px 7px;
+  vertical-align: top;
+  text-align: left;
+}
+.print-doc .doc-table thead th {
+  background: #f1f5f9;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+.print-doc .doc-section {
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 12.5px;
+  margin: 18px 0 8px;
+}
+@media print {
+  .print-doc { width: 100% !important; max-width: none !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
+  .print-doc .doc-table thead { display: table-header-group; }
+  .print-doc .doc-table tr { break-inside: avoid; }
+  .print-doc .doc-keep { break-inside: avoid; }
+}
+
 /* Print Styles for PDF Export */
 @media print {
-  @page { size: A4 portrait; margin: 12mm; }
+  @page { size: A4 portrait; margin: 18mm; }
   body { background-color: #ffffff !important; color: #000000 !important; font-size: 11pt !important; }
   .no-print, nav, aside, header, .role-switcher-floating, .quick-cmd-trigger, button, .toast, .lightbox-modal {
     display: none !important;

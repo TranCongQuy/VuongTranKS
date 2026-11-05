@@ -18,6 +18,7 @@ import {
   CheckSquare,
   Film,
   Image as ImageIcon,
+  Printer,
 } from 'lucide-react';
 import { formatDateVN, formatDateTimeVN, getRelativeDueLabel } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -99,6 +100,18 @@ export function TaskDetailModal({
       <button type="button" onClick={onClose} className="btn-ghost">
         Đóng
       </button>
+      {/* Chỉ task ĐÃ NGHIỆM THU mới có biên bản nghiệm thu để in */}
+      {isApproved && (
+        <a
+          href={`/reports/minutes/${task.id}`}
+          target="_blank"
+          rel="noreferrer"
+          className="btn-ghost"
+        >
+          <Printer className="w-4 h-4" />
+          In biên bản nghiệm thu
+        </a>
+      )}
       {primaryAction && (
         <button type="button" onClick={primaryAction.onClick} className="btn-primary">
           {primaryAction.icon}

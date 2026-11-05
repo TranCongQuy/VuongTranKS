@@ -24,12 +24,24 @@ export default function SettingsPage() {
   const isTwoFactorSimulated = useConstructionStore((s) => s.isTwoFactorSimulated);
   const toggleTwoFactor = useConstructionStore((s) => s.toggleTwoFactor);
   const resetDemoData = useConstructionStore((s) => s.resetDemoData);
+  const reloadSampleData = useConstructionStore((s) => s.reloadSampleData);
   const projects = useConstructionStore((s) => s.projects);
 
   const handleReset = () => {
     if (confirm('Bạn có chắc chắn muốn đặt lại toàn bộ dữ liệu mẫu (dự án, task, nhật ký)?')) {
       resetDemoData();
       toast.success('Đã đặt lại dữ liệu demo ban đầu thành công!');
+    }
+  };
+
+  const handleReloadSample = () => {
+    if (
+      confirm(
+        'Nạp lại bộ dữ liệu mẫu mới nhất? Các dự án/nhiệm vụ hiện tại (kể cả dữ liệu tự tạo) sẽ được thay bằng bộ mẫu mới. Tài khoản, phiên đăng nhập và cài đặt được giữ nguyên.'
+      )
+    ) {
+      reloadSampleData();
+      toast.success('Đã nạp lại dữ liệu mẫu mới thành công!');
     }
   };
 
@@ -149,6 +161,24 @@ export default function SettingsPage() {
                 >
                   <RefreshCw className="w-4 h-4" />
                   Đặt lại dữ liệu demo
+                </button>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-5 pt-5 border-t border-rose-200/70 dark:border-rose-500/20">
+                <div className="min-w-0">
+                  <div className="font-bold text-[13.5px] text-ink dark:text-slate-100">
+                    Nạp lại dữ liệu mẫu mới
+                  </div>
+                  <p className="text-xs text-ink-soft dark:text-slate-400 mt-0.5">
+                    Dùng khi hệ thống đã có phiên bản dữ liệu mẫu mới: thay toàn bộ dự án, nhiệm vụ,
+                    minh chứng và tin nhắn mẫu bằng bộ mới nhất — vẫn giữ nguyên tài khoản, phiên
+                    đăng nhập và cài đặt của bạn.
+                  </p>
+                </div>
+
+                <button onClick={handleReloadSample} className="btn-ghost shrink-0">
+                  <RefreshCw className="w-4 h-4" />
+                  Nạp lại dữ liệu mẫu mới
                 </button>
               </div>
             </div>

@@ -224,7 +224,10 @@ export interface Task {
   description: string;
   assigneeId: string;
   status: TaskStatus;
-  progress: number; // 0 - 100
+  // % tiến độ do giám sát BÁO CÁO cho riêng task này (0 - 100) — đây là DỮ LIỆU ĐẦU VÀO.
+  // % tiến độ của GÓI không lưu ở bất kỳ field nào: luôn suy ra qua
+  // selectProjectProgress trong src/lib/selectors.ts (nguồn sự thật duy nhất).
+  progress: number;
   startDate: string; // YYYY-MM-DD
   dueDate: string;   // YYYY-MM-DD
   priority: TaskPriority;

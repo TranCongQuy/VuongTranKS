@@ -41,6 +41,12 @@ import { TaskApprovalModal } from '@/components/tasks/TaskApprovalModal';
 import { TaskUpdateModal } from '@/components/tasks/TaskUpdateModal';
 import { useConstructionStore } from '@/lib/store';
 import {
+  selectOverallProgress,
+  selectProjectAcceptedProgress,
+  selectWeightedTimeProgress,
+  getProjectContractValue,
+} from '@/lib/selectors';
+import {
   Task,
   TASK_STATUS_CONFIG,
 } from '@/lib/types';
@@ -308,6 +314,7 @@ export default function DashboardPage() {
   const getVisibleProjects = useConstructionStore((s) => s.getVisibleProjects);
   const calculateProjectProgress = useConstructionStore((s) => s.calculateProjectProgress);
   const tasks = useConstructionStore((s) => s.tasks);
+  const allProjects = useConstructionStore((s) => s.projects);
   const getOverdueTasks = useConstructionStore((s) => s.getOverdueTasks);
   const getPendingApprovalTasks = useConstructionStore((s) => s.getPendingApprovalTasks);
   const getUserTasks = useConstructionStore((s) => s.getUserTasks);
@@ -353,14 +360,13 @@ export default function DashboardPage() {
     .flatMap((t) => t.incidents || []);
   const unresolvedIncidents = allVisibleIncidents.filter((i) => i.status !== 'resolved');
 
-  // Calculate average progress across visible projects
-  const avgProgress =
-    visibleProjects.length > 0
-      ? Math.round(
-          visibleProjects.reduce((acc, p) => acc + calculateProjectProgress(p.id), 0) /
-            visibleProjects.length
-        )
-      : 0;
+  // Tiến độ TỔNG toàn trường — TRỌNG SỐ THEO GIÁ TRỊ HỢP ĐỒNG qua selector
+  // duy nhất (src/lib/selectors.ts). KHÔNG còn trung bình cộng % các gói:
+  // gói 2,5 tỷ phải nặng hơn gói 165 triệu trong con số tổng.
+  const overallProgress = selectOverallProgress(
+    { projects: allProjects, tasks },
+    visibleProjects
+  );
 
   // Visible tasks & status breakdown
   const visibleTasks = tasks.filter((t) => visibleProjectIds.has(t.projectId) && !t.isDeleted);
@@ -431,25 +437,30 @@ export default function DashboardPage() {
     const end = new Date(first.getFullYear(), first.getMonth() + 1, 0, 23, 59, 59);
     return { label: `Th ${first.getMonth() + 1}`, end };
   });
-  const approvedTasks = visibleTasks.filter((t) => t.status === 'approved');
+  // Biểu đồ vùng: cả 2 đường đều qua selector (selectors.ts) và TRỌNG SỐ
+  // THEO GIÁ TRỊ HỢP ĐỒNG để nhất quán với con số tiến độ tổng ở hero.
+  //  - Đường liền (actual): % khối lượng ĐÃ NGHIỆM THU luỹ kế tới cuối tháng
+  //    (selectProjectAcceptedProgress — chỉ task approved đúng hạn mới tính).
+  //  - Đường đứt (plan): % thời gian đã trôi qua của các gói, trọng số HĐ.
+  const progressSlice = { projects: allProjects, tasks };
   const areaData: MonthPoint[] = monthEnds.map((m) => {
-    const approvedByThen = approvedTasks.filter(
-      (t) => new Date(t.approvedAt ?? t.updatedAt) <= m.end
-    ).length;
+    const totalValue = visibleProjects.reduce(
+      (sum, p) => sum + getProjectContractValue(p),
+      0
+    );
     const actual =
-      visibleTasks.length > 0 ? Math.round((approvedByThen / visibleTasks.length) * 100) : 0;
-    const plan =
-      visibleProjects.length > 0
+      totalValue > 0
         ? Math.round(
-            visibleProjects.reduce((acc, p) => {
-              const start = new Date(p.startDate).getTime();
-              const end = new Date(p.endDate).getTime();
-              if (end <= start) return acc + (m.end.getTime() >= end ? 100 : 0);
-              const frac = (m.end.getTime() - start) / (end - start);
-              return acc + Math.min(1, Math.max(0, frac)) * 100;
-            }, 0) / visibleProjects.length
+            visibleProjects.reduce(
+              (sum, p) =>
+                sum +
+                selectProjectAcceptedProgress(progressSlice, p.id, m.end) *
+                  getProjectContractValue(p),
+              0
+            ) / totalValue
           )
         : 0;
+    const plan = selectWeightedTimeProgress(progressSlice, visibleProjects, m.end);
     return { name: m.label, actual, plan };
   });
 
@@ -495,7 +506,7 @@ export default function DashboardPage() {
   const animProjects = useAnimatedNumber(visibleProjects.length);
   const animPending = useAnimatedNumber(pendingTasks.length);
   const animOverdue = useAnimatedNumber(overdueTasks.length);
-  const animAvgProgress = useAnimatedNumber(avgProgress);
+  const animAvgProgress = useAnimatedNumber(overallProgress);
   const animIncidents = useAnimatedNumber(unresolvedIncidents.length);
   const animMyTasks = useAnimatedNumber(myTasks.length);
   const animMyOverdue = useAnimatedNumber(myOverdueTasks.length);
@@ -589,7 +600,7 @@ export default function DashboardPage() {
               <ProgressBar value={mounted ? totalPaidPercent : 0} tone="gradient" className="mt-3" />
             </div>
             <StatCard
-              label="Tiến độ Thi công Trung bình"
+              label="Tiến độ Tổng thể (Trọng số Kinh phí)"
               value={`${animAvgProgress}%`}
               sub={`${statusCounts.approved} đạt nghiệm thu • ${statusCounts.in_progress} đang làm`}
               icon={<TrendingUp className="w-5 h-5" />}
@@ -815,11 +826,11 @@ export default function DashboardPage() {
   // ==========================================
   const isAdmin = currentUser.role === 'admin';
   const heroHeadline =
-    avgProgress >= 60
+    overallProgress >= 60
       ? 'Tiến độ tổng thể toàn trường đang tăng tốc tốt'
-      : avgProgress >= 25
+      : overallProgress >= 25
         ? 'Tiến độ tổng thể toàn trường đang đi đúng nhịp'
-        : avgProgress > 0
+        : overallProgress > 0
           ? 'Tiến độ tổng thể đang ở giai đoạn tăng tốc ban đầu'
           : 'Các dự án đang chờ khởi động';
   const todayLabel = `${WEEKDAYS_VI[now.getDay()]}, ${formatDateVN(now)}`;
@@ -972,14 +983,15 @@ export default function DashboardPage() {
           transition={{ duration: 0.45, ease: 'easeOut' }}
           className="card px-5 py-5 sm:px-[26px] flex flex-col lg:flex-row lg:items-center gap-6"
         >
-          <RingProgress value={avgProgress} size={130} strokeWidth={11} label="Hoàn thành" />
+          <RingProgress value={overallProgress} size={130} strokeWidth={11} label="Hoàn thành" />
           <div className="min-w-0 flex-1">
             <h2 className="text-[19px] font-extrabold text-ink dark:text-white tracking-tight">
               {heroHeadline}
             </h2>
             <p className="text-[13.5px] text-ink-soft dark:text-slate-400 leading-relaxed mt-1.5 max-w-[560px]">
-              Đã nghiệm thu <b className="text-ink dark:text-white">{avgProgress}%</b> khối lượng
-              của <b className="text-ink dark:text-white">{visibleProjects.length} dự án</b>.{' '}
+              Tiến độ chung đạt <b className="text-ink dark:text-white">{overallProgress}%</b> (trọng số
+              theo giá trị hợp đồng) trên{' '}
+              <b className="text-ink dark:text-white">{visibleProjects.length} dự án</b>.{' '}
               {topEntry && (
                 <>
                   Gói{' '}
@@ -1145,7 +1157,7 @@ export default function DashboardPage() {
             <motion.div {...fadeUp}>
               <SectionCard
                 title="Tiến độ nghiệm thu theo tháng"
-                subtitle="Đường liền: % nhiệm vụ đã nghiệm thu (luỹ kế) · Đường đứt: kế hoạch theo thời gian dự án"
+                subtitle="Đường liền: % khối lượng đã nghiệm thu (luỹ kế, trọng số kinh phí) · Đường đứt: kế hoạch theo thời gian"
                 action={
                   isAdmin ? (
                     <Link href="/reports" className="btn-quiet">

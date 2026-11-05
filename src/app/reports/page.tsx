@@ -106,11 +106,20 @@ export default function ReportsPage() {
                 ))}
               </select>
             </div>
+            <a
+              href="/reports/print"
+              target="_blank"
+              rel="noreferrer"
+              className="btn-primary"
+            >
+              <Printer className="w-4 h-4" />
+              In báo cáo tổng hợp
+            </a>
             <RowMenu
               label="Xuất báo cáo"
               items={[
                 {
-                  label: 'In / Xuất PDF',
+                  label: 'In báo cáo gói đang chọn / Xuất PDF',
                   icon: <Printer className="w-4 h-4" />,
                   onClick: handlePrint,
                 },

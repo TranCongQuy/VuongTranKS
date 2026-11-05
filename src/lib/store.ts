@@ -26,6 +26,12 @@ import {
   INITIAL_NOTIFICATIONS,
   INITIAL_AUDIT_LOGS,
 } from './mock-data';
+import { selectProjectProgress } from './selectors';
+import {
+  CURRENT_SEED_VERSION,
+  buildSampleSlice,
+  hasOnlySampleData,
+} from './seed';
 
 interface ConstructionStoreState {
   currentUser: User;
@@ -40,6 +46,8 @@ interface ConstructionStoreState {
   theme: 'light' | 'dark';
   isTwoFactorSimulated: boolean;
   isAuthenticated: boolean;
+  /** Phiên bản bộ dữ liệu mẫu đang lưu (xem src/lib/seed.ts). */
+  seedVersion: number;
 
   // Role & User
   setCurrentUser: (userIdOrUser: string | User) => void;
@@ -52,6 +60,10 @@ interface ConstructionStoreState {
   addUser: (userData: Omit<User, 'id' | 'avatar'> & { avatar?: string }) => void;
   updateUser: (userId: string, data: Partial<User>) => void;
   resetDemoData: () => void;
+  /** Tự nâng cấp dữ liệu mẫu khi seedVersion cũ + dữ liệu thuần mẫu (seed.ts). */
+  maybeUpgradeSeed: () => void;
+  /** Nạp lại bộ dữ liệu mẫu mới nhất, giữ users/phiên đăng nhập/cài đặt. */
+  reloadSampleData: () => void;
 
   // Projects
   getVisibleProjects: () => Project[];
@@ -131,6 +143,7 @@ export const useConstructionStore = create<ConstructionStoreState>()(
       theme: 'light',
       isTwoFactorSimulated: true,
       isAuthenticated: false,
+      seedVersion: CURRENT_SEED_VERSION,
 
       setCurrentUser: (userIdOrUser) => {
         const { users } = get();
@@ -248,7 +261,37 @@ export const useConstructionStore = create<ConstructionStoreState>()(
           notifications: INITIAL_NOTIFICATIONS,
           auditLogs: INITIAL_AUDIT_LOGS,
           isTwoFactorSimulated: true,
+          seedVersion: CURRENT_SEED_VERSION,
         });
+      },
+
+      maybeUpgradeSeed: () => {
+        const { seedVersion, projects, tasks } = get();
+        if (seedVersion >= CURRENT_SEED_VERSION) return;
+        // Chỉ tự thay khi dữ liệu thuần mẫu (chưa có dữ liệu tự tạo) —
+        // xem cơ chế đầy đủ trong src/lib/seed.ts.
+        if (!hasOnlySampleData(projects, tasks)) {
+          // Đánh dấu đã kiểm tra để không lặp lại; người dùng sẽ chủ động
+          // nạp mẫu mới bằng nút trong Cài đặt nếu muốn.
+          set({ seedVersion: CURRENT_SEED_VERSION });
+          return;
+        }
+        set({
+          ...buildSampleSlice(),
+          seedVersion: CURRENT_SEED_VERSION,
+        });
+      },
+
+      reloadSampleData: () => {
+        set({
+          ...buildSampleSlice(),
+          seedVersion: CURRENT_SEED_VERSION,
+        });
+        get().addAuditLog(
+          'Nạp lại dữ liệu mẫu mới',
+          'Công cụ demo',
+          `Đã nạp bộ dữ liệu mẫu phiên bản ${CURRENT_SEED_VERSION} (giữ nguyên tài khoản và phiên đăng nhập).`
+        );
       },
 
       getVisibleProjects: () => {
@@ -289,26 +332,9 @@ export const useConstructionStore = create<ConstructionStoreState>()(
       },
 
       calculateProjectProgress: (projectId) => {
-        const projectTasks = get().tasks.filter((t) => t.projectId === projectId && !t.isDeleted);
-        if (projectTasks.length === 0) return 0;
-
-        const allApproved = projectTasks.every((t) => t.status === 'approved');
-        
-        const sum = projectTasks.reduce((acc, t) => {
-          if (t.status === 'approved') {
-            return acc + 100;
-          }
-          // Non-approved tasks are capped at 99% in project calculation
-          const effectiveProgress = Math.min(t.progress, 99);
-          return acc + effectiveProgress;
-        }, 0);
-
-        const average = sum / projectTasks.length;
-        if (allApproved) {
-          return 100;
-        }
-        // Cap overall project progress at 99% until ALL tasks are approved
-        return Math.min(Math.round(average), 99);
+        // NGUỒN SỰ THẬT DUY NHẤT: ủy quyền cho selector trong src/lib/selectors.ts
+        // (% gói suy ra từ task, trọng số theo số subtask; không tính lại ở đây).
+        return selectProjectProgress(get(), projectId);
       },
 
       addProject: (data) => {
@@ -1088,6 +1114,21 @@ export const useConstructionStore = create<ConstructionStoreState>()(
     {
       name: 'pxu_taskmaster_store_v7',
       storage: createJSONStorage(() => localStorage),
+      // version của persist envelope = phiên bản bộ dữ liệu mẫu (seed.ts).
+      version: CURRENT_SEED_VERSION,
+      migrate: (persistedState, version) => {
+        const state = (persistedState ?? {}) as Partial<ConstructionStoreState>;
+        if (version < CURRENT_SEED_VERSION) {
+          // Dữ liệu lưu từ bản cũ: ghi lại seedVersion THẬT của nó (0/1) để
+          // maybeUpgradeSeed quyết định tự nâng cấp sau khi rehydrate xong.
+          return { ...state, seedVersion: version } as ConstructionStoreState;
+        }
+        return state as ConstructionStoreState;
+      },
+      onRehydrateStorage: () => (state) => {
+        // Sau khi nạp dữ liệu đã lưu: tự nâng cấp mẫu nếu đủ điều kiện.
+        state?.maybeUpgradeSeed();
+      },
       partialize: (state) => ({
         currentUser: state.currentUser,
         users: state.users,
@@ -1101,6 +1142,7 @@ export const useConstructionStore = create<ConstructionStoreState>()(
         theme: state.theme,
         isTwoFactorSimulated: state.isTwoFactorSimulated,
         isAuthenticated: state.isAuthenticated,
+        seedVersion: state.seedVersion,
       }),
     }
   )

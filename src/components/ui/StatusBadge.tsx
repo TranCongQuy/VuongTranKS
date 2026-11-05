@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-export type BadgeTone = 'pine' | 'gold' | 'rose' | 'sky' | 'violet' | 'slate' | 'navy';
+export type BadgeTone = 'pine' | 'gold' | 'rose' | 'sky' | 'violet' | 'slate' | 'navy' | 'indigo';
 
 const TONES: Record<BadgeTone, string> = {
   pine: 'bg-pine-100 text-pine-700 dark:bg-pine-600/15 dark:text-pine-500',
@@ -10,7 +10,8 @@ const TONES: Record<BadgeTone, string> = {
   sky: 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400',
   violet: 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-400',
   slate: 'bg-slate-200/70 text-slate-600 dark:bg-slate-500/15 dark:text-slate-300',
-  navy: 'bg-navy-100 text-navy-800 dark:bg-navy-700/40 dark:text-navy-100',
+  navy: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300',
+  indigo: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300',
 };
 
 export function StatusBadge({

@@ -43,8 +43,8 @@ export function SegmentedControl<T extends string>({
               className={cn(
                 'relative flex items-center gap-2 px-4 py-3 text-[13.5px] font-semibold whitespace-nowrap transition-colors cursor-pointer',
                 active
-                  ? 'text-navy-900 dark:text-white'
-                  : 'text-ink-soft dark:text-slate-400 hover:text-navy-900 dark:hover:text-slate-200'
+                  ? 'text-indigo-600 dark:text-indigo-300'
+                  : 'text-ink-soft dark:text-slate-400 hover:text-ink dark:hover:text-slate-200'
               )}
             >
               {opt.icon}
@@ -53,13 +53,13 @@ export function SegmentedControl<T extends string>({
                 <span
                   className={cn(
                     'text-[10.5px] font-bold px-1.5 py-0.5 rounded-full',
-                    active ? 'bg-gold-100 text-gold-600 dark:bg-gold-500/20 dark:text-gold-400' : 'bg-slate-200/70 text-slate-500 dark:bg-slate-700/60 dark:text-slate-400'
+                    active ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300' : 'bg-slate-200/70 text-slate-500 dark:bg-slate-700/60 dark:text-slate-400'
                   )}
                 >
                   {opt.count}
                 </span>
               )}
-              {active && <span className="absolute left-3 right-3 -bottom-px h-[3px] rounded-full bg-gold-500" />}
+              {active && <span className="absolute left-3 right-3 -bottom-px h-[3px] rounded-full bg-gradient-to-r from-indigo-500 to-emerald-500" />}
             </button>
           );
         })}
@@ -70,7 +70,7 @@ export function SegmentedControl<T extends string>({
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1 p-1 rounded-[14px] bg-cream-deep/70 dark:bg-night-line/60 border border-line dark:border-night-line overflow-x-auto max-w-full',
+        'inline-flex items-center gap-1 p-1 rounded-[14px] bg-slate-100/90 dark:bg-slate-800/70 overflow-x-auto max-w-full',
         className
       )}
     >
@@ -84,8 +84,8 @@ export function SegmentedControl<T extends string>({
               'flex items-center gap-1.5 rounded-[10px] font-semibold whitespace-nowrap transition-all cursor-pointer',
               size === 'sm' ? 'px-3 py-1.5 text-xs' : 'px-3.5 py-2 text-[13px]',
               active
-                ? 'bg-navy-900 text-white shadow-md shadow-navy-900/20 dark:bg-gold-500 dark:text-navy-950'
-                : 'text-ink-soft dark:text-slate-400 hover:text-navy-900 dark:hover:text-white'
+                ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-slate-900/5 dark:bg-slate-900 dark:text-indigo-300 dark:ring-white/10'
+                : 'text-ink-soft dark:text-slate-400 hover:text-ink dark:hover:text-white'
             )}
           >
             {opt.icon}
@@ -94,7 +94,7 @@ export function SegmentedControl<T extends string>({
               <span
                 className={cn(
                   'text-[10.5px] font-bold px-1.5 py-0.5 rounded-full',
-                  active ? 'bg-white/20 text-inherit' : 'bg-slate-200/80 text-slate-500 dark:bg-slate-700/70 dark:text-slate-400'
+                  active ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300' : 'bg-slate-200/80 text-slate-500 dark:bg-slate-700/70 dark:text-slate-400'
                 )}
               >
                 {opt.count}

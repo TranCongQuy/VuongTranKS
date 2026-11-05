@@ -24,7 +24,7 @@ export function Switch({
       }}
       className={cn(
         'relative w-11 h-[26px] rounded-full transition-colors cursor-pointer shrink-0',
-        checked ? 'bg-pine-600' : 'bg-slate-300 dark:bg-slate-600'
+        checked ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-600'
       )}
     >
       <span

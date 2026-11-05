@@ -56,7 +56,7 @@ export function TaskApprovalModal({ task, onClose, onSuccess }: TaskApprovalModa
         particleCount: 80,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ['#0e7c5b', '#c9a227', '#0b2239', '#129a73'],
+        colors: ['#6366F1', '#10B981', '#F59E0B', '#0EA5E9'],
       });
     } catch {
       // ignore
@@ -175,7 +175,7 @@ export function TaskApprovalModal({ task, onClose, onSuccess }: TaskApprovalModa
         </div>
 
         {/* Assignee Card */}
-        <div className="p-3.5 rounded-2xl bg-cream dark:bg-night-line/40 border border-line dark:border-night-line flex items-center justify-between gap-3">
+        <div className="p-3.5 rounded-2xl bg-[#F8FAFC] dark:bg-night-line/40 border border-line dark:border-night-line flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <Avatar text={assignee?.avatar || 'CB'} tone="gold" />
             <div className="min-w-0">
@@ -192,7 +192,7 @@ export function TaskApprovalModal({ task, onClose, onSuccess }: TaskApprovalModa
 
         {/* Latest report note */}
         {updates.length > 0 && (
-          <div className="p-4 rounded-2xl bg-navy-100/50 dark:bg-navy-800/30 border border-navy-100 dark:border-navy-700/50">
+          <div className="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/25">
             <span className="lbl flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5" />
               Ghi chú nghiệm thu gần nhất

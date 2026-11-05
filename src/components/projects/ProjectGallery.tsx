@@ -181,7 +181,7 @@ export function ProjectGallery({ projectId, tasks }: ProjectGalleryProps) {
 
                   {item.type === 'video' && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="w-11 h-11 rounded-full bg-gold-500 text-navy-950 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                      <div className="w-11 h-11 rounded-full bg-white text-indigo-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                         <Play className="w-5 h-5 ml-0.5 fill-current" />
                       </div>
                     </div>
@@ -276,7 +276,7 @@ export function ProjectGallery({ projectId, tasks }: ProjectGalleryProps) {
                     <IconBtn
                       label={isPlayingVideo ? 'Tạm dừng' : 'Phát'}
                       onClick={() => setIsPlayingVideo(!isPlayingVideo)}
-                      className="bg-gold-500 text-navy-950 hover:bg-gold-400 hover:text-navy-950 rounded-lg"
+                      className="bg-indigo-500 text-white hover:bg-indigo-600 hover:text-white rounded-lg"
                     >
                       {isPlayingVideo ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                     </IconBtn>

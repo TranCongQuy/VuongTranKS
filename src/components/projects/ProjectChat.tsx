@@ -57,7 +57,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
       {/* Chat Header */}
       <div className="px-5 py-4 border-b border-line dark:border-night-line flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
-          <span className="w-9 h-9 rounded-xl bg-navy-900 text-gold-400 flex items-center justify-center shrink-0">
+          <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-emerald-500 text-white flex items-center justify-center shrink-0">
             <MessagesSquare className="w-4 h-4" />
           </span>
           <div className="min-w-0">
@@ -75,7 +75,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
       </div>
 
       {/* Message Stream */}
-      <div className="flex-1 px-4 sm:px-5 py-4 overflow-y-auto space-y-4 bg-cream/60 dark:bg-night/40">
+      <div className="flex-1 px-4 sm:px-5 py-4 overflow-y-auto space-y-4 bg-[#F8FAFC]/80 dark:bg-night/40">
         {projectMessages.length === 0 ? (
           <EmptyState
             title="Chưa có tin nhắn nào trong kênh dự án này"
@@ -114,8 +114,8 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
                     className={cn(
                       'px-3.5 py-3 rounded-2xl text-[13px] leading-relaxed inline-block text-left',
                       isMe
-                        ? 'bg-pine-600 text-white font-medium rounded-tr-md shadow-sm shadow-pine-600/20'
-                        : 'bg-cream-deep dark:bg-night-card text-ink dark:text-slate-200 rounded-tl-md border border-line dark:border-night-line'
+                        ? 'bg-indigo-500 text-white font-medium rounded-tr-md shadow-sm shadow-indigo-500/25'
+                        : 'bg-white dark:bg-night-card text-ink dark:text-slate-200 rounded-tl-md border border-line dark:border-night-line shadow-sm'
                     )}
                   >
                     {msg.content}
@@ -149,7 +149,7 @@ export function ProjectChat({ projectId }: ProjectChatProps) {
           type="submit"
           disabled={!inputText.trim()}
           aria-label="Gửi tin nhắn"
-          className="w-10 h-10 rounded-full bg-pine-600 hover:bg-pine-700 text-white flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-pine-600/25 shrink-0 cursor-pointer"
+          className="w-10 h-10 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-indigo-500/30 shrink-0 cursor-pointer"
         >
           <Send className="w-4 h-4" />
         </button>

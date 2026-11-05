@@ -58,7 +58,7 @@ export function TaskTimelineView({ tasks, onSelectTask }: TaskTimelineViewProps)
             <div
               key={t.id}
               onClick={() => onSelectTask(t)}
-              className="group cursor-pointer hover:bg-cream/70 dark:hover:bg-night-line/30 px-3 py-3 rounded-2xl transition-colors"
+              className="group cursor-pointer hover:bg-indigo-50/60 dark:hover:bg-white/5 px-3 py-3 rounded-2xl transition-colors"
             >
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs mb-2">
                 <div className="flex items-center gap-2 min-w-0">
@@ -76,7 +76,7 @@ export function TaskTimelineView({ tasks, onSelectTask }: TaskTimelineViewProps)
               </div>
 
               {/* Timeline Track */}
-              <div className="relative h-6 bg-cream-deep/70 dark:bg-night-line/60 rounded-lg overflow-hidden">
+              <div className="relative h-6 bg-slate-100 dark:bg-night-line/60 rounded-lg overflow-hidden">
                 <div
                   className="absolute top-0 bottom-0 rounded-lg flex items-center px-2 text-[10px] font-bold text-white transition-all"
                   style={{

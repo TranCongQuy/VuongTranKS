@@ -42,7 +42,7 @@ export function Modal({
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="absolute inset-0 bg-navy-950/60 backdrop-blur-[2px] animate-in fade-in duration-150" onClick={onClose} />
+      <div className="absolute inset-0 bg-slate-950/55 backdrop-blur-[2px] animate-in fade-in duration-150" onClick={onClose} />
       <div
         role="dialog"
         aria-modal="true"
@@ -60,7 +60,7 @@ export function Modal({
           <button
             aria-label="Đóng"
             onClick={onClose}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-ink-soft dark:text-slate-400 hover:bg-cream-deep dark:hover:bg-night-line hover:text-navy-900 dark:hover:text-white transition-colors cursor-pointer shrink-0"
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-ink-soft dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-white transition-colors cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>

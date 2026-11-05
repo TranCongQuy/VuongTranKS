@@ -83,63 +83,64 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-cream dark:bg-night flex flex-col lg:grid lg:grid-cols-[1.05fr_1fr] select-none">
       {/* Cột trái — panel thương hiệu (mobile: header gọn phía trên) */}
-      <aside className="relative overflow-hidden bg-navy-900 text-white px-6 py-6 sm:px-8 lg:px-12 lg:py-10 flex flex-col">
-        <div className="safety-stripe-accent absolute inset-x-0 top-0 h-1.5" />
+      <aside className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-600 to-teal-600 text-white px-6 py-6 sm:px-8 lg:px-12 lg:py-10 flex flex-col">
+        <div aria-hidden="true" className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-white/10 blur-3xl pointer-events-none" />
+        <div aria-hidden="true" className="absolute -bottom-32 -left-16 w-96 h-96 rounded-full bg-emerald-300/20 blur-3xl pointer-events-none" />
         <div className="flex items-center gap-3 lg:mb-10">
-          <div className="w-11 h-11 lg:w-14 lg:h-14 rounded-2xl bg-gold-500 text-navy-950 flex items-center justify-center shrink-0">
+          <div className="w-11 h-11 lg:w-14 lg:h-14 rounded-2xl bg-white text-indigo-600 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-900/20">
             <HardHat className="w-6 h-6 lg:w-8 lg:h-8 stroke-[2.2]" />
           </div>
           <div className="lg:hidden">
             <div className="font-extrabold leading-tight">
-              Quản lý Dự án <span className="text-gold-400">PXU</span>
+              Quản lý Dự án <span className="text-emerald-300">PXU</span>
             </div>
-            <div className="text-[11px] text-navy-100/80">Đại học Phú Xuân</div>
+            <div className="text-[11px] text-white/80">Đại học Phú Xuân</div>
           </div>
         </div>
 
         <div className="hidden lg:block max-w-md">
-          <div className="eyebrow mb-3">Đại học Phú Xuân</div>
+          <div className="text-[11px] font-extrabold tracking-[0.14em] uppercase text-emerald-300 mb-3">Đại học Phú Xuân</div>
           <h1 className="text-4xl xl:text-[44px] font-extrabold leading-[1.08] tracking-tight">
-            Quản lý Dự án <span className="text-gold-400">PXU</span>
+            Quản lý Dự án <span className="text-emerald-300">PXU</span>
           </h1>
-          <p className="text-sm text-navy-100/85 mt-3 leading-relaxed">
+          <p className="text-sm text-white/85 mt-3 leading-relaxed">
             Giao việc, Giám sát &amp; Báo cáo Công trình — một nơi duy nhất để theo dõi tiến độ,
             kinh phí và minh chứng hiện trường.
           </p>
 
           <ul className="mt-8 space-y-4 text-[13.5px]">
             <li className="flex items-start gap-3">
-              <span className="w-9 h-9 rounded-xl bg-white/10 text-gold-400 flex items-center justify-center shrink-0">
+              <span className="w-9 h-9 rounded-xl bg-white/15 text-white flex items-center justify-center shrink-0">
                 <ShieldCheck className="w-4.5 h-4.5" />
               </span>
               <span className="leading-relaxed">
                 <strong className="block text-white">Admin — Chủ trì kế hoạch</strong>
-                <span className="text-navy-100/75">Tạo dự án, giao việc và nghiệm thu kết quả.</span>
+                <span className="text-white/75">Tạo dự án, giao việc và nghiệm thu kết quả.</span>
               </span>
             </li>
             <li className="flex items-start gap-3">
-              <span className="w-9 h-9 rounded-xl bg-white/10 text-gold-400 flex items-center justify-center shrink-0">
+              <span className="w-9 h-9 rounded-xl bg-white/15 text-white flex items-center justify-center shrink-0">
                 <HardHat className="w-4.5 h-4.5" />
               </span>
               <span className="leading-relaxed">
                 <strong className="block text-white">Kỹ sư — Thực hiện hiện trường</strong>
-                <span className="text-navy-100/75">Báo cáo tiến độ, nộp minh chứng và báo trở ngại.</span>
+                <span className="text-white/75">Báo cáo tiến độ, nộp minh chứng và báo trở ngại.</span>
               </span>
             </li>
             <li className="flex items-start gap-3">
-              <span className="w-9 h-9 rounded-xl bg-white/10 text-gold-400 flex items-center justify-center shrink-0">
+              <span className="w-9 h-9 rounded-xl bg-white/15 text-white flex items-center justify-center shrink-0">
                 <Eye className="w-4.5 h-4.5" />
               </span>
               <span className="leading-relaxed">
                 <strong className="block text-white">Lãnh đạo — Giám sát cấp cao</strong>
-                <span className="text-navy-100/75">Xem chỉ số các dự án được cấp quyền và gửi chỉ đạo.</span>
+                <span className="text-white/75">Xem chỉ số các dự án được cấp quyền và gửi chỉ đạo.</span>
               </span>
             </li>
           </ul>
         </div>
 
-        <div className="hidden lg:flex items-center gap-2 mt-auto pt-10 text-[11px] text-navy-100/70">
-          <Building2 className="w-3.5 h-3.5 text-gold-400/70" />
+        <div className="hidden lg:flex items-center gap-2 mt-auto pt-10 text-[11px] text-white/70 relative">
+          <Building2 className="w-3.5 h-3.5 text-white/60" />
           <span>Đại học Phú Xuân • Hệ thống giám sát xây dựng thực tế • Tiêu chuẩn an toàn TCVN</span>
         </div>
       </aside>
@@ -165,13 +166,13 @@ export default function LoginPage() {
 
                 <div className="divide-y divide-line dark:divide-night-line border border-line dark:border-night-line rounded-2xl overflow-hidden">
                   {users.map((u) => {
-                    let roleIcon = <ShieldCheck className="w-3.5 h-3.5 text-gold-600" />;
+                    let roleIcon = <ShieldCheck className="w-3.5 h-3.5 text-indigo-500" />;
                     let roleBadge = 'Admin (Toàn quyền)';
                     if (u.role === 'assignee') {
                       roleIcon = <HardHat className="w-3.5 h-3.5 text-pine-600" />;
                       roleBadge = 'Kỹ sư (Thực hiện)';
                     } else if (u.role === 'leader') {
-                      roleIcon = <Eye className="w-3.5 h-3.5 text-navy-700 dark:text-navy-100" />;
+                      roleIcon = <Eye className="w-3.5 h-3.5 text-indigo-500" />;
                       roleBadge = 'Lãnh đạo (Chỉ xem)';
                     }
 
@@ -182,8 +183,8 @@ export default function LoginPage() {
                         disabled={!u.isActive}
                         className={`w-full text-left px-4 py-3.5 flex items-center gap-3 transition-colors ${
                           u.isActive
-                            ? 'bg-white dark:bg-night-card hover:bg-cream dark:hover:bg-night-line/50 cursor-pointer'
-                            : 'bg-cream/60 dark:bg-night-card/60 opacity-45 cursor-not-allowed'
+                            ? 'bg-white dark:bg-night-card hover:bg-indigo-50/70 dark:hover:bg-white/5 cursor-pointer'
+                            : 'bg-slate-50 dark:bg-night-card/60 opacity-45 cursor-not-allowed'
                         }`}
                       >
                         <Avatar text={u.avatar} tone={u.role === 'admin' ? 'gold' : u.role === 'assignee' ? 'pine' : 'navy'} />
@@ -215,13 +216,13 @@ export default function LoginPage() {
               /* 2FA Step */
               <form onSubmit={handleVerify2FA}>
                 <div className="text-center mb-5">
-                  <div className="w-12 h-12 rounded-2xl bg-gold-100 dark:bg-gold-500/15 text-gold-600 flex items-center justify-center mx-auto mb-2.5">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 flex items-center justify-center mx-auto mb-2.5">
                     <KeyRound className="w-6 h-6" />
                   </div>
                   <h3 className="text-base font-bold text-ink dark:text-white">Xác thực hai yếu tố (2FA)</h3>
                   <p className="text-xs text-ink-soft dark:text-slate-400 mt-1">
                     Đang đăng nhập với tài khoản{' '}
-                    <span className="text-gold-600 font-semibold">{selectedUser?.name}</span>. Vui
+                    <span className="text-indigo-600 dark:text-indigo-300 font-semibold">{selectedUser?.name}</span>. Vui
                     lòng nhập 6 số mã OTP.
                   </p>
                 </div>
@@ -236,7 +237,7 @@ export default function LoginPage() {
                       maxLength={1}
                       value={digit}
                       onChange={(e) => handleOtpChange(idx, e.target.value)}
-                      className="input w-11 h-13 sm:w-12 sm:h-14 !p-0 text-center text-xl font-mono font-bold text-gold-600"
+                      className="input w-11 h-13 sm:w-12 sm:h-14 !p-0 text-center text-xl font-mono font-bold text-indigo-600 dark:text-indigo-300"
                     />
                   ))}
                 </div>

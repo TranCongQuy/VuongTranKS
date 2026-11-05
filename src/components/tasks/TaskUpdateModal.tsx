@@ -258,7 +258,7 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
         {!isLocked && (
           <form onSubmit={handleSubmit} id="update-form" className="space-y-5">
             {/* Progress Slider */}
-            <div className="p-4 rounded-2xl bg-cream dark:bg-night-line/40 border border-line dark:border-night-line space-y-3">
+            <div className="p-4 rounded-2xl bg-[#F8FAFC] dark:bg-night-line/40 border border-line dark:border-night-line space-y-3">
               <div className="flex items-center justify-between">
                 <label className="lbl mb-0">
                   Mức độ hoàn thành thực tế
@@ -314,7 +314,7 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
             </div>
 
             {/* Mục phát sinh / Sự cố hiện trường (Incident Reporting) */}
-            <div className="p-4 rounded-2xl border border-gold-500/30 bg-gold-100/40 dark:bg-gold-500/5 space-y-3">
+            <div className="p-4 rounded-2xl border border-amber-300/70 bg-amber-50 dark:bg-amber-500/5 space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-[13px] font-bold text-ink dark:text-slate-200 flex items-center gap-1.5">
                   <AlertTriangle className="w-4 h-4 text-gold-600 dark:text-gold-400" />
@@ -333,7 +333,7 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
               )}
 
               {hasIncident && (
-                <div className="space-y-3 pt-3 border-t border-gold-500/20 text-[13px]">
+                <div className="space-y-3 pt-3 border-t border-amber-300/40 text-[13px]">
                   <div>
                     <label className="lbl">Tiêu đề mục phát sinh *</label>
                     <input
@@ -434,7 +434,7 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="p-4 rounded-2xl border-2 border-dashed border-line dark:border-night-line hover:border-pine-500 bg-cream dark:bg-night-line/30 text-center transition-colors flex flex-col items-center justify-center gap-1.5 cursor-pointer"
+                  className="p-4 rounded-2xl border-2 border-dashed border-line dark:border-night-line hover:border-emerald-400 bg-[#F8FAFC] dark:bg-night-line/30 text-center transition-colors flex flex-col items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <UploadCloud className="w-5 h-5 text-pine-600" />
                   <span className="text-xs font-bold text-ink dark:text-slate-300">
@@ -446,7 +446,7 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
                 <button
                   type="button"
                   onClick={() => cameraInputRef.current?.click()}
-                  className="p-4 rounded-2xl border-2 border-dashed border-gold-500/60 bg-gold-100/50 dark:bg-gold-500/10 hover:bg-gold-100 text-center transition-colors flex flex-col items-center justify-center gap-1.5 cursor-pointer"
+                  className="p-4 rounded-2xl border-2 border-dashed border-indigo-300 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/15 text-center transition-colors flex flex-col items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Camera className="w-5 h-5 text-gold-600 dark:text-gold-400" />
                   <span className="text-xs font-bold text-gold-600 dark:text-gold-400">
@@ -458,7 +458,7 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
 
               {/* Trạng thái đọc tệp thật (FileReader) — không dùng % giả */}
               {isProcessingFiles && (
-                <div className="mt-3 p-3 rounded-xl bg-cream-deep dark:bg-night-line/50 border border-line dark:border-night-line">
+                <div className="mt-3 p-3 rounded-xl bg-slate-100 dark:bg-night-line/50 border border-line dark:border-night-line">
                   <span className="text-xs font-semibold text-ink dark:text-slate-300">
                     Đang xử lý tệp...
                   </span>
@@ -475,7 +475,7 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
                     {attachments.map((att) => (
                       <div
                         key={att.id}
-                        className="relative rounded-xl overflow-hidden border border-line dark:border-night-line p-2.5 bg-cream dark:bg-night-line/30 flex items-center justify-between gap-2"
+                        className="relative rounded-xl overflow-hidden border border-line dark:border-night-line p-2.5 bg-[#F8FAFC] dark:bg-night-line/30 flex items-center justify-between gap-2"
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           {att.type === 'video' ? (

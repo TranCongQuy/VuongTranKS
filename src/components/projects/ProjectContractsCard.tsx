@@ -23,7 +23,7 @@ export function ProjectContractsCard({ contracts = [], technicalNotes }: Project
           Chưa ký hợp đồng chính thức (Đang ở giai đoạn lập chủ trương / khảo sát thiết kế hoặc tổ chức lựa chọn nhà thầu chào giá).
         </p>
         {technicalNotes && (
-          <div className="mt-3 p-3.5 rounded-2xl bg-cream dark:bg-night-line/40 border border-line dark:border-night-line text-xs text-ink-soft dark:text-slate-300 leading-relaxed">
+          <div className="mt-3 p-3.5 rounded-2xl bg-[#F8FAFC] dark:bg-night-line/40 border border-line dark:border-night-line text-xs text-ink-soft dark:text-slate-300 leading-relaxed">
             <strong className="text-ink dark:text-white">Ghi chú kỹ thuật:</strong> {technicalNotes}
           </div>
         )}
@@ -48,7 +48,7 @@ export function ProjectContractsCard({ contracts = [], technicalNotes }: Project
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <span className="inline-block font-tabular text-[11px] font-bold px-2 py-0.5 rounded-md bg-navy-900 text-gold-400">
+                    <span className="inline-block font-tabular text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-600 text-white">
                       {ctr.contractNumber}
                     </span>
                     <h4 className="font-bold text-ink dark:text-white text-sm mt-1.5 flex items-center gap-1.5">
@@ -66,7 +66,7 @@ export function ProjectContractsCard({ contracts = [], technicalNotes }: Project
 
                 {/* Terms and warranty row */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] mt-3">
-                  <div className="p-2.5 rounded-xl bg-cream dark:bg-night-line/40 border border-line dark:border-night-line">
+                  <div className="p-2.5 rounded-xl bg-[#F8FAFC] dark:bg-night-line/40 border border-line dark:border-night-line">
                     <span className="text-ink-soft dark:text-slate-400 block text-[10px] mb-0.5">Thuế VAT</span>
                     <span className="font-bold text-ink dark:text-slate-200 flex items-center gap-1">
                       <Percent className="w-3 h-3 text-gold-600 dark:text-gold-400" />
@@ -74,14 +74,14 @@ export function ProjectContractsCard({ contracts = [], technicalNotes }: Project
                     </span>
                   </div>
 
-                  <div className="p-2.5 rounded-xl bg-cream dark:bg-night-line/40 border border-line dark:border-night-line">
+                  <div className="p-2.5 rounded-xl bg-[#F8FAFC] dark:bg-night-line/40 border border-line dark:border-night-line">
                     <span className="text-ink-soft dark:text-slate-400 block text-[10px] mb-0.5">Tạm ứng HĐ</span>
                     <span className="font-bold text-ink dark:text-slate-200">
                       {ctr.advancePaymentRate || 30}% giá trị
                     </span>
                   </div>
 
-                  <div className="p-2.5 rounded-xl bg-cream dark:bg-night-line/40 border border-line dark:border-night-line">
+                  <div className="p-2.5 rounded-xl bg-[#F8FAFC] dark:bg-night-line/40 border border-line dark:border-night-line">
                     <span className="text-ink-soft dark:text-slate-400 block text-[10px] mb-0.5">Giữ lại bảo hành</span>
                     <span className="font-bold text-pine-700 dark:text-pine-500 flex items-center gap-1">
                       <ShieldCheck className="w-3 h-3" />
@@ -89,7 +89,7 @@ export function ProjectContractsCard({ contracts = [], technicalNotes }: Project
                     </span>
                   </div>
 
-                  <div className="p-2.5 rounded-xl bg-cream dark:bg-night-line/40 border border-line dark:border-night-line">
+                  <div className="p-2.5 rounded-xl bg-[#F8FAFC] dark:bg-night-line/40 border border-line dark:border-night-line">
                     <span className="text-ink-soft dark:text-slate-400 block text-[10px] mb-0.5">Thời hạn bảo hành</span>
                     <span className="font-bold text-ink dark:text-slate-200 flex items-center gap-1">
                       <Calendar className="w-3 h-3 text-ink-soft dark:text-slate-400" />
@@ -99,7 +99,7 @@ export function ProjectContractsCard({ contracts = [], technicalNotes }: Project
                 </div>
 
                 {ctr.scopeDescription && (
-                  <p className="text-xs text-ink-soft dark:text-slate-300 bg-cream/70 dark:bg-night-line/30 p-3 rounded-xl border border-line dark:border-night-line leading-relaxed mt-3">
+                  <p className="text-xs text-ink-soft dark:text-slate-300 bg-[#F8FAFC] dark:bg-night-line/30 p-3 rounded-xl border border-line dark:border-night-line leading-relaxed mt-3">
                     <strong className="text-ink dark:text-white">Phạm vi công việc:</strong> {ctr.scopeDescription}
                   </p>
                 )}
@@ -110,7 +110,7 @@ export function ProjectContractsCard({ contracts = [], technicalNotes }: Project
       </ul>
 
       {technicalNotes && (
-        <div className="mx-5 mb-5 p-3.5 rounded-2xl bg-gold-100/50 dark:bg-gold-500/10 border border-gold-500/25 text-xs text-ink-soft dark:text-slate-300 leading-relaxed">
+        <div className="mx-5 mb-5 p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200/60 dark:border-indigo-500/25 text-xs text-ink-soft dark:text-slate-300 leading-relaxed">
           <strong className="text-ink dark:text-white">Ghi chú kỹ thuật &amp; Khối lượng chi tiết:</strong> {technicalNotes}
         </div>
       )}

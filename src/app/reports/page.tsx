@@ -164,7 +164,7 @@ export default function ReportsPage() {
               <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-900">
                 BÁO CÁO TIẾN ĐỘ THỰC HIỆN, KINH PHÍ & XỬ LÝ PHÁT SINH
               </h2>
-              <p className="text-sm font-bold text-gold-600 mt-1">
+              <p className="text-sm font-bold text-indigo-600 mt-1">
                 Kế hoạch: {project.name}
               </p>
               <div className="flex items-center justify-center gap-2 mt-1">
@@ -193,14 +193,14 @@ export default function ReportsPage() {
                 <div className="font-mono">
                   {formatDateVN(project.startDate)} - {formatDateVN(project.endDate)}
                 </div>
-                <div className="text-gold-600 font-mono text-base">{progress}%</div>
+                <div className="text-indigo-600 font-mono text-base">{progress}%</div>
               </div>
             </div>
 
             {/* Directive snippet if exists */}
             {project.directive && (
-              <div className="mb-6 p-4 rounded-xl border border-gold-500/40 bg-gold-100/50 text-xs">
-                <div className="font-bold text-gold-600 flex items-center gap-1.5 mb-1">
+              <div className="mb-6 p-4 rounded-xl border border-indigo-300/60 bg-indigo-50 text-xs">
+                <div className="font-bold text-indigo-600 flex items-center gap-1.5 mb-1">
                   <Sparkles className="w-3.5 h-3.5" />
                   Ý kiến chỉ đạo của Lãnh đạo ({project.directive.authorName} - {project.directive.authorTitle}):
                 </div>

@@ -165,11 +165,11 @@ export default function MyTasksPage() {
                 <div
                   key={t.id}
                   onClick={() => setSelectedTask(t)}
-                  className="px-4 sm:px-5 py-4 flex items-start sm:items-center gap-4 cursor-pointer transition-colors hover:bg-cream/70 dark:hover:bg-night-line/40"
+                  className="px-4 sm:px-5 py-4 flex items-start sm:items-center gap-4 cursor-pointer transition-colors hover:bg-indigo-50/50 dark:hover:bg-white/5"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                      <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-navy-100 dark:bg-navy-700/40 text-navy-800 dark:text-navy-100">
+                      <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-200">
                         {project?.code || 'DỰ ÁN'}
                       </span>
                       <StatusBadge tone={statusTone(t.status)} dot>

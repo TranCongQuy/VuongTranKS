@@ -33,7 +33,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Điều hướng di động"
-      className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-navy-900/97 backdrop-blur-md border-t border-navy-800 flex items-center justify-around px-2 z-40 no-print"
+      className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/85 dark:bg-night-card/90 backdrop-blur-xl border-t border-line dark:border-night-line flex items-center justify-around px-2 z-40 no-print"
     >
       {items.map((item) => {
         const Icon = item.icon;
@@ -43,17 +43,17 @@ export function BottomNav() {
             href={item.href}
             className={`relative flex flex-col items-center justify-center min-w-[56px] min-h-[44px] rounded-lg transition-colors ${
               item.isActive
-                ? 'text-gold-400 font-bold'
-                : 'text-navy-100/55 hover:text-navy-100'
+                ? 'text-indigo-600 dark:text-indigo-300 font-bold'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
             }`}
           >
             {item.isActive && (
-              <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[3px] rounded-full bg-gold-500" />
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[3px] rounded-full bg-gradient-to-r from-indigo-500 to-emerald-500" />
             )}
             <Icon className="w-5 h-5 mb-0.5" />
             <span className="text-[10px]">{item.label}</span>
             {item.badge > 0 && (
-              <span className="absolute top-1 right-2 min-w-3.5 h-3.5 px-0.5 rounded-full bg-gold-500 text-navy-950 font-bold text-[9px] flex items-center justify-center">
+              <span className="absolute top-1 right-2 min-w-3.5 h-3.5 px-0.5 rounded-full bg-rose-500 text-white font-bold text-[9px] flex items-center justify-center">
                 {item.badge}
               </span>
             )}

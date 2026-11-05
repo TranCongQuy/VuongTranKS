@@ -24,6 +24,7 @@ import {
 import { AppShell } from '@/components/layout/AppShell';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SectionCard, StatCard, ProgressBar } from '@/components/ui/cards';
+import { RingProgress } from '@/components/ui/RingProgress';
 import { StatusBadge, type BadgeTone } from '@/components/ui/StatusBadge';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { RowMenu } from '@/components/ui/RowMenu';
@@ -44,6 +45,23 @@ const PROJECT_STATUS_META: Record<ProjectStatus, { label: string; tone: BadgeTon
   completed: { label: 'Đã hoàn thành', tone: 'navy' },
   paused: { label: 'Tạm dừng', tone: 'gold' },
 };
+
+/**
+ * Trích 2 màu gradient từ ảnh bìa SVG gốc của dự án (coverGradient là data-uri
+ * do createCoverSvg sinh, chứa 2 stop-color) để dựng dải gradient MỀM kiểu
+ * Aurora thay cho ảnh bìa tối có chữ cháy sẵn. Không đổi dữ liệu đã lưu.
+ */
+function coverColors(cover: string): [string, string] {
+  try {
+    const decoded = decodeURIComponent(cover || '');
+    const stops = Array.from(decoded.matchAll(/stop-color="(#[0-9A-Fa-f]{6})"/g)).map((m) => m[1]);
+    if (stops.length >= 2) return [stops[0], stops[1]];
+    if (stops.length === 1) return [stops[0], '#10B981'];
+  } catch {
+    /* bỏ qua, dùng cặp màu Aurora mặc định */
+  }
+  return ['#6366F1', '#10B981'];
+}
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -305,6 +323,7 @@ export default function ProjectsPage() {
               const pendingCount = p.pendingTasksList?.length || 0;
               const redAlertsCount = p.redAlerts?.length || 0;
               const statusMeta = PROJECT_STATUS_META[p.status] || PROJECT_STATUS_META.active;
+              const [coverC1, coverC2] = coverColors(p.coverGradient);
 
               return (
                 <div
@@ -312,19 +331,30 @@ export default function ProjectsPage() {
                   onClick={() => router.push(`/projects/${p.id}`)}
                   className="card overflow-hidden flex flex-col group cursor-pointer hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300"
                 >
-                  {/* Card Cover — bìa gọn, hành động duy nhất là RowMenu (admin) */}
-                  <div className="relative h-32 w-full bg-navy-900 overflow-hidden shrink-0">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={p.coverGradient}
-                      alt={p.name}
-                      className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
-                    />
+                  {/* Đầu thẻ Aurora — dải gradient mềm theo màu bìa gốc + vòng % ở góc */}
+                  <div
+                    className="relative h-28 w-full overflow-hidden shrink-0"
+                    style={{ background: `linear-gradient(120deg, ${coverC1}, ${coverC2})` }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-white/0 to-black/15" />
+                    <div className="absolute -right-8 -top-12 w-44 h-44 rounded-full border border-white/25 pointer-events-none" />
+                    <div className="absolute -right-1 -top-5 w-24 h-24 rounded-full border border-white/20 pointer-events-none" />
 
                     <div className="absolute top-3 left-3">
-                      <StatusBadge tone="gold">
-                        Bước {stepObj.step}: {stepObj.shortName}
-                      </StatusBadge>
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/90 text-slate-700 shadow-sm backdrop-blur">
+                        Bước {stepObj.step}: {stepObj.shortName.replace(/^B\d+:\s*/, '')}
+                      </span>
+                    </div>
+
+                    <div className="absolute bottom-3 right-3">
+                      <RingProgress
+                        value={progress}
+                        size={46}
+                        strokeWidth={4.5}
+                        color="#FFFFFF"
+                        trackColor="rgba(255,255,255,0.35)"
+                        valueClassName="text-white"
+                      />
                     </div>
 
                     {currentUser.role === 'admin' && (
@@ -362,7 +392,7 @@ export default function ProjectsPage() {
                     </div>
 
                     <div>
-                      <h3 className="font-bold text-[15px] leading-snug text-ink dark:text-slate-100 group-hover:text-pine-600 dark:group-hover:text-pine-500 transition-colors line-clamp-2">
+                      <h3 className="font-bold text-[15px] leading-snug text-ink dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors line-clamp-2">
                         {p.name}
                       </h3>
                       <p className="text-xs text-ink-soft dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
@@ -380,23 +410,16 @@ export default function ProjectsPage() {
                       </div>
                     )}
 
-                    {/* Progress + meta rows */}
+                    {/* Meta rows — % tiến độ đã nằm ở vòng RingProgress trên đầu thẻ */}
                     <div className="mt-auto space-y-2.5 pt-3 border-t border-line dark:border-night-line">
-                      <div className="flex items-center gap-3">
-                        <ProgressBar value={progress} tone={progress === 100 ? 'pine' : 'gold'} className="flex-1" />
-                        <span className="font-tabular font-extrabold text-sm text-ink dark:text-white shrink-0">
-                          {progress}%
-                        </span>
-                      </div>
-
                       <div className="flex items-center justify-between gap-2 text-xs text-ink-soft dark:text-slate-400">
                         <span className="flex items-center gap-1.5 min-w-0">
-                          <UserRound className="w-3.5 h-3.5 text-gold-600 shrink-0" />
+                          <UserRound className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
                           <span className="truncate font-semibold text-ink dark:text-slate-200">
                             {p.contractor || 'Chưa ký HĐ'}
                           </span>
                         </span>
-                        <span className="font-mono font-bold text-ink dark:text-gold-400 shrink-0">
+                        <span className="font-mono font-bold text-ink dark:text-white shrink-0">
                           {p.budget}
                         </span>
                       </div>
@@ -415,7 +438,7 @@ export default function ProjectsPage() {
                           {completedCount} đã làm
                         </span>
                         <span className="text-line dark:text-night-line">•</span>
-                        <span className="flex items-center gap-1 text-gold-600 dark:text-gold-400 font-medium">
+                        <span className="flex items-center gap-1 text-indigo-600 dark:text-indigo-300 font-medium">
                           <Clock className="w-3.5 h-3.5" />
                           {pendingCount} việc còn lại
                         </span>
@@ -433,9 +456,9 @@ export default function ProjectsPage() {
         {/* ======================================================== */}
         {viewMode === 'kanban' && (
           <div className="space-y-4">
-            <div className="p-4 rounded-2xl bg-gold-100/60 dark:bg-gold-500/10 border border-gold-500/25 text-xs text-ink dark:text-gold-100 flex items-center justify-between">
+            <div className="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200/60 dark:border-indigo-500/25 text-xs text-ink dark:text-slate-200 flex items-center justify-between">
               <span className="flex items-center gap-2 font-medium">
-                <Kanban className="w-4 h-4 text-gold-600" />
+                <Kanban className="w-4 h-4 text-indigo-500" />
                 <span>
                   Bảng điều hướng quy trình 9 bước chuẩn hóa của Trường Đại học Phú Xuân.
                   Hiển thị vị trí thực tế của toàn bộ {filteredProjects.length} gói thầu.
@@ -448,7 +471,7 @@ export default function ProjectsPage() {
               {projectsByStep.map((col) => (
                 <div
                   key={col.step}
-                  className="w-80 shrink-0 rounded-[20px] bg-cream-deep/50 dark:bg-night-card border border-line dark:border-night-line p-4 flex flex-col justify-between max-h-[750px]"
+                  className="w-80 shrink-0 rounded-[20px] bg-slate-100/70 dark:bg-night-card border border-line dark:border-night-line p-4 flex flex-col justify-between max-h-[750px]"
                 >
                   {/* Column Header */}
                   <div>
@@ -482,24 +505,24 @@ export default function ProjectsPage() {
                             <Link
                               key={p.id}
                               href={`/projects/${p.id}`}
-                              className="card block p-3.5 hover:border-gold-400 hover:shadow-md transition-all group"
+                              className="card block p-3.5 hover:border-indigo-300 hover:shadow-md transition-all group"
                             >
                               <div className="flex items-center justify-between mb-1.5">
-                                <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-cream-deep dark:bg-night-line text-ink dark:text-slate-300">
+                                <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-night-line text-ink dark:text-slate-300">
                                   {p.code}
                                 </span>
-                                <span className="font-tabular font-bold text-xs text-gold-600 dark:text-gold-400">
+                                <span className="font-tabular font-bold text-xs text-indigo-600 dark:text-indigo-300">
                                   {progress}%
                                 </span>
                               </div>
 
-                              <h4 className="font-bold text-xs text-ink dark:text-slate-100 group-hover:text-pine-600 dark:group-hover:text-pine-500 transition-colors line-clamp-2 leading-snug">
+                              <h4 className="font-bold text-xs text-ink dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors line-clamp-2 leading-snug">
                                 {p.name}
                               </h4>
 
                               {p.contractor && p.contractor !== 'Chưa chọn nhà thầu' && (
                                 <div className="mt-2 text-[10px] text-ink-soft dark:text-slate-400 flex items-center gap-1 truncate">
-                                  <Building2 className="w-3 h-3 text-gold-600 shrink-0" />
+                                  <Building2 className="w-3 h-3 text-indigo-500 shrink-0" />
                                   <span className="truncate">{p.contractor}</span>
                                 </div>
                               )}
@@ -508,7 +531,7 @@ export default function ProjectsPage() {
                                 <span className="font-mono font-bold text-ink dark:text-slate-300">
                                   {p.budget}
                                 </span>
-                                <span className="text-[10px] text-ink-soft group-hover:text-pine-600 flex items-center gap-0.5 font-semibold">
+                                <span className="text-[10px] text-ink-soft group-hover:text-indigo-600 flex items-center gap-0.5 font-semibold">
                                   Xem <ChevronRight className="w-3 h-3" />
                                 </span>
                               </div>
@@ -579,7 +602,7 @@ export default function ProjectsPage() {
                     {signedProjects.flatMap((p) =>
                       (p.contracts || []).map((ctr) => (
                         <tr key={ctr.id}>
-                          <td className="font-mono font-bold text-gold-600 dark:text-gold-400 whitespace-nowrap">
+                          <td className="font-mono font-bold text-indigo-600 dark:text-indigo-300 whitespace-nowrap">
                             {ctr.contractNumber}
                           </td>
                           <td className="font-bold text-ink dark:text-slate-100 max-w-xs truncate">
@@ -629,21 +652,21 @@ export default function ProjectsPage() {
               return (
                 <div
                   key={p.id}
-                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-cream/60 dark:hover:bg-night-line/40 transition-colors"
+                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-indigo-50/50 dark:hover:bg-white/5 transition-colors"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-cream-deep dark:bg-night-line text-ink dark:text-slate-300">
+                      <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-night-line text-ink dark:text-slate-300">
                         {p.code}
                       </span>
                       <StatusBadge tone="gold">
-                        Bước {stepObj.step}: {stepObj.shortName}
+                        Bước {stepObj.step}: {stepObj.shortName.replace(/^B\d+:\s*/, '')}
                       </StatusBadge>
                       <StatusBadge tone={statusMeta.tone} dot>
                         {statusMeta.label}
                       </StatusBadge>
                       <span className="text-xs text-ink-soft dark:text-slate-400 flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-gold-600" />
+                        <MapPin className="w-3 h-3 text-indigo-500" />
                         {p.location}
                       </span>
                     </div>
@@ -655,14 +678,14 @@ export default function ProjectsPage() {
                   <div className="flex items-center gap-5 shrink-0">
                     <div className="w-36">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-mono font-bold text-xs text-gold-600 dark:text-gold-400">
+                        <span className="font-mono font-bold text-xs text-indigo-600 dark:text-indigo-300">
                           {p.budget}
                         </span>
                         <span className="font-tabular font-bold text-sm text-ink dark:text-slate-200">
                           {progress}%
                         </span>
                       </div>
-                      <ProgressBar value={progress} tone={progress === 100 ? 'pine' : 'gold'} h="h-1.5" className="mt-1.5" />
+                      <ProgressBar value={progress} tone={progress === 100 ? 'pine' : 'gradient'} h="h-1.5" className="mt-1.5" />
                     </div>
 
                     <Link href={`/projects/${p.id}`} className="btn-quiet">

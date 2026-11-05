@@ -26,9 +26,9 @@ interface TaskKanbanViewProps {
 
 const COLUMNS: { id: TaskStatus; title: string; color: string; tone: BadgeTone; barTone: 'pine' | 'gold' | 'rose' | 'navy' }[] = [
   { id: 'todo', title: 'Mới giao', color: '#64748B', tone: 'slate', barTone: 'navy' },
-  { id: 'in_progress', title: 'Đang làm', color: '#C9A227', tone: 'gold', barTone: 'gold' },
+  { id: 'in_progress', title: 'Đang làm', color: '#6366F1', tone: 'indigo', barTone: 'navy' },
   { id: 'submitted', title: 'Chờ duyệt (100%)', color: '#6366F1', tone: 'violet', barTone: 'navy' },
-  { id: 'approved', title: 'Đã nghiệm thu', color: '#0E7C5B', tone: 'pine', barTone: 'pine' },
+  { id: 'approved', title: 'Đã nghiệm thu', color: '#10B981', tone: 'pine', barTone: 'pine' },
   { id: 'returned', title: 'Cần làm lại', color: '#EF4444', tone: 'rose', barTone: 'rose' },
 ];
 
@@ -94,7 +94,7 @@ export function TaskKanbanView({
             key={col.id}
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, col.id)}
-            className="flex flex-col rounded-[20px] bg-cream-deep/50 dark:bg-night/50 border border-line dark:border-night-line p-3 min-h-[500px]"
+            className="flex flex-col rounded-[20px] bg-slate-100/70 dark:bg-night/50 border border-line dark:border-night-line p-3 min-h-[500px]"
           >
             {/* Column Header */}
             <div className="flex items-center justify-between pb-3 mb-2">

@@ -126,7 +126,7 @@ export function TaskDetailModal({
           </div>
 
           {/* Status info bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-2xl bg-cream dark:bg-night-line/40 border border-line dark:border-night-line">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-2xl bg-[#F8FAFC] dark:bg-night-line/40 border border-line dark:border-night-line">
             <div>
               <span className="lbl">Tiến độ</span>
               <div className="font-tabular font-black text-lg text-pine-700 dark:text-pine-500">
@@ -161,7 +161,7 @@ export function TaskDetailModal({
           {/* Description */}
           <div>
             <h4 className="lbl">Mục tiêu &amp; Yêu cầu thực hiện</h4>
-            <p className="text-ink-soft dark:text-slate-300 leading-relaxed bg-cream dark:bg-night-line/30 p-4 rounded-2xl border border-line dark:border-night-line">
+            <p className="text-ink-soft dark:text-slate-300 leading-relaxed bg-[#F8FAFC] dark:bg-night-line/30 p-4 rounded-2xl border border-line dark:border-night-line">
               {task.description}
             </p>
           </div>
@@ -178,7 +178,7 @@ export function TaskDetailModal({
                   {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length} hoàn thành
                 </span>
               </div>
-              <div className="rounded-2xl bg-cream dark:bg-night-line/30 p-2 border border-line dark:border-night-line divide-y divide-line/70 dark:divide-night-line/70">
+              <div className="rounded-2xl bg-[#F8FAFC] dark:bg-night-line/30 p-2 border border-line dark:border-night-line divide-y divide-line/70 dark:divide-night-line/70">
                 {task.subtasks.map((st) => (
                   <label
                     key={st.id}
@@ -222,7 +222,7 @@ export function TaskDetailModal({
                   return (
                     <div
                       key={inc.id}
-                      className="p-4 rounded-2xl bg-gold-100/40 dark:bg-night-line/30 border border-gold-500/25 space-y-2"
+                      className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/25 space-y-2"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-1.5">
                         <span className="font-bold text-ink dark:text-white text-[13px]">
@@ -303,7 +303,7 @@ export function TaskDetailModal({
                     />
                     <div className="absolute top-2 left-2 flex items-center gap-1">
                       {att.type === 'video' ? (
-                        <span className="px-2 py-0.5 rounded-lg bg-black/70 backdrop-blur-md text-gold-400 text-[10px] font-bold font-tabular flex items-center gap-1 border border-gold-500/30">
+                        <span className="px-2 py-0.5 rounded-lg bg-black/70 backdrop-blur-md text-amber-300 text-[10px] font-bold font-tabular flex items-center gap-1 border border-amber-400/30">
                           <Film className="w-3 h-3" />
                           {att.duration ? `${Math.floor(att.duration / 60)}:${(att.duration % 60).toString().padStart(2, '0')}` : 'Video'}
                         </span>

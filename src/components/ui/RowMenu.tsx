@@ -56,7 +56,7 @@ export function RowMenu({
           'w-9 h-9 rounded-xl flex items-center justify-center transition-colors cursor-pointer',
           dark
             ? 'bg-black/45 text-white backdrop-blur-sm hover:bg-black/65'
-            : 'text-ink-soft dark:text-slate-400 hover:bg-cream-deep dark:hover:bg-night-line hover:text-navy-900 dark:hover:text-white'
+            : 'text-ink-soft dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-white'
         )}
       >
         <MoreHorizontal className="w-5 h-5" />
@@ -79,7 +79,7 @@ export function RowMenu({
                 'w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold text-left transition-colors cursor-pointer',
                 item.danger
                   ? 'text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10'
-                  : 'text-ink dark:text-slate-200 hover:bg-cream dark:hover:bg-night-line'
+                  : 'text-ink dark:text-slate-200 hover:bg-indigo-50/70 dark:hover:bg-slate-800'
               )}
             >
               {item.icon}
@@ -110,7 +110,7 @@ export function IconBtn({
       title={label}
       onClick={onClick}
       className={cn(
-        'w-9 h-9 rounded-xl flex items-center justify-center text-ink-soft dark:text-slate-400 hover:bg-cream-deep dark:hover:bg-night-line hover:text-navy-900 dark:hover:text-white transition-colors cursor-pointer shrink-0',
+        'w-9 h-9 rounded-xl flex items-center justify-center text-ink-soft dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-white transition-colors cursor-pointer shrink-0',
         className
       )}
     >

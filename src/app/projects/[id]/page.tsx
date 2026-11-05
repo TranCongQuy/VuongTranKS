@@ -28,7 +28,8 @@ import {
   Users,
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
-import { SectionCard, StatCard, ProgressBar, Avatar, EmptyState } from '@/components/ui/cards';
+import { SectionCard, StatCard, Avatar, EmptyState } from '@/components/ui/cards';
+import { RingProgress } from '@/components/ui/RingProgress';
 import { StatusBadge, type BadgeTone } from '@/components/ui/StatusBadge';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { RowMenu, IconBtn } from '@/components/ui/RowMenu';
@@ -318,19 +319,19 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     </span>
                   )}
                   <span className="flex items-center gap-1.5">
-                    <Briefcase className="w-3.5 h-3.5 text-gold-600" />
+                    <Briefcase className="w-3.5 h-3.5 text-indigo-500" />
                     Đơn vị thi công: <strong className="text-ink dark:text-slate-200">{project.contractor || project.organization}</strong>
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-gold-600" />
+                    <MapPin className="w-3.5 h-3.5 text-indigo-500" />
                     {project.location}
                   </span>
                   <span className="flex items-center gap-1.5 font-mono">
-                    <Calendar className="w-3.5 h-3.5 text-gold-600" />
+                    <Calendar className="w-3.5 h-3.5 text-indigo-500" />
                     {formatDateVN(project.startDate)} → {formatDateVN(project.endDate)}
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-gold-600" />
+                    <Users className="w-3.5 h-3.5 text-indigo-500" />
                     Lãnh đạo giám sát:{' '}
                     <strong className="text-ink dark:text-slate-200">
                       {projectLeaderNames.length > 0 ? projectLeaderNames.join(', ') : 'Chưa cấp quyền'}
@@ -340,43 +341,39 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
 
-            {/* Tiến độ thật — số % lớn + thanh pine + bước workflow hiện tại */}
-            <div className="shrink-0 lg:w-56 lg:border-l lg:border-line lg:dark:border-night-line lg:pl-5">
-              <div className="flex items-baseline gap-2">
-                <span className="font-tabular text-[40px] leading-none font-extrabold text-ink dark:text-white">
-                  {progress}
-                </span>
-                <span className="font-tabular text-lg font-bold text-ink-soft dark:text-slate-400">%</span>
-                <span className="text-[11px] text-ink-soft dark:text-slate-400 font-medium">
-                  {projectTasks.filter((t) => t.status === 'approved').length}/{projectTasks.length} nhiệm vụ
-                </span>
+            {/* Tiến độ thật — RingProgress lớn kiểu Aurora + bước workflow hiện tại */}
+            <div className="shrink-0 lg:border-l lg:border-line lg:dark:border-night-line lg:pl-6 flex items-center gap-4">
+              <RingProgress value={progress} size={104} strokeWidth={9} label="Hoàn thành" />
+              <div className="min-w-0">
+                <div className="text-[11px] text-ink-soft dark:text-slate-400 font-medium">
+                  {projectTasks.filter((t) => t.status === 'approved').length}/{projectTasks.length} nhiệm vụ đã nghiệm thu
+                </div>
+                <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-300 mt-1.5">
+                  Đang ở {currentStepObj.name}
+                </p>
               </div>
-              <ProgressBar value={progress} tone="pine" className="mt-2.5" />
-              <p className="text-xs font-semibold text-pine-700 dark:text-pine-500 mt-2">
-                Đang ở Bước {currentStepNum}: {currentStepObj.shortName}
-              </p>
             </div>
           </div>
 
           {/* Dải số liệu tài chính tóm tắt (tiến độ đã chuyển lên khối % bên phải) */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-line dark:border-night-line text-xs">
-            <div className="p-3 rounded-2xl bg-parchment dark:bg-night-line/40 border border-line dark:border-night-line">
+            <div className="p-3 rounded-2xl bg-[#F8FAFC] dark:bg-night-line/40 border border-line dark:border-night-line">
               <span className="text-[10px] text-ink-soft dark:text-slate-400 uppercase font-semibold block">Kinh phí dự toán</span>
               <div className="font-mono text-base font-black text-ink dark:text-white mt-0.5">
                 {formatCurrencyVN(totalBudget)}
               </div>
             </div>
 
-            <div className="p-3 rounded-2xl bg-parchment dark:bg-night-line/40 border border-line dark:border-night-line">
+            <div className="p-3 rounded-2xl bg-[#F8FAFC] dark:bg-night-line/40 border border-line dark:border-night-line">
               <span className="text-[10px] text-pine-600 dark:text-pine-500 uppercase font-semibold block">Đã thanh toán</span>
               <div className="font-mono text-base font-black text-pine-600 dark:text-pine-500 mt-0.5">
                 {formatCurrencyVN(paidAmount)} ({paidPercent}%)
               </div>
             </div>
 
-            <div className="p-3 rounded-2xl bg-parchment dark:bg-night-line/40 border border-line dark:border-night-line">
-              <span className="text-[10px] text-gold-600 dark:text-gold-400 uppercase font-semibold block">Còn lại cần nộp</span>
-              <div className="font-mono text-base font-black text-gold-600 dark:text-gold-400 mt-0.5">
+            <div className="p-3 rounded-2xl bg-[#F8FAFC] dark:bg-night-line/40 border border-line dark:border-night-line">
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 uppercase font-semibold block">Còn lại cần nộp</span>
+              <div className="font-mono text-base font-black text-amber-600 dark:text-amber-400 mt-0.5">
                 {formatCurrencyVN(remainingAmount)}
               </div>
             </div>
@@ -453,10 +450,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <ProjectContractsCard contracts={project.contracts} technicalNotes={project.technicalNotes} />
 
             {/* Leadership Directive & Evaluation Panel */}
-            <div className="card p-5 sm:p-6 bg-gold-100/40 dark:bg-gold-500/5 space-y-4">
+            <div className="card p-5 sm:p-6 bg-indigo-50/70 dark:bg-indigo-500/5 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-2xl bg-gold-500 text-navy-950 flex items-center justify-center font-bold">
+                  <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-indigo-500 to-emerald-500 text-white flex items-center justify-center font-bold shadow-[0_8px_20px_rgba(99,102,241,0.35)]">
                     <Sparkles className="w-4 h-4" />
                   </div>
                   <div>
@@ -492,9 +489,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
               {/* Directive Display */}
               {project.directive && (
-                <div className="p-4 rounded-2xl bg-parchment dark:bg-night-card border border-line dark:border-night-line text-xs">
+                <div className="p-4 rounded-2xl bg-white dark:bg-night-card border border-line dark:border-night-line text-xs">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-bold text-gold-600 dark:text-gold-400">
+                    <span className="font-bold text-indigo-600 dark:text-indigo-300">
                       {project.directive.authorName} ({project.directive.authorTitle})
                     </span>
                     <span className="text-[10px] text-ink-soft dark:text-slate-400 font-mono">
@@ -509,7 +506,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
               {/* Evaluation comment if any */}
               {project.evaluation?.comment && (
-                <div className="p-3.5 rounded-2xl bg-pine-100/60 dark:bg-pine-600/10 border border-pine-500/25 text-xs text-pine-700 dark:text-pine-500">
+                <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-pine-600/10 dark:bg-pine-600/10 border border-pine-500/25 text-xs text-pine-700 dark:text-pine-500">
                   <strong className="block font-semibold mb-0.5">Nhận xét chuyên môn của Lãnh đạo:</strong>
                   {project.evaluation.comment}
                 </div>
@@ -545,7 +542,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     ) : (
                       <form
                         onSubmit={handleSubmitEvaluation}
-                        className="p-4 rounded-2xl bg-parchment dark:bg-night-card border border-line dark:border-night-line space-y-3"
+                        className="p-4 rounded-2xl bg-white dark:bg-night-card border border-line dark:border-night-line space-y-3"
                       >
                         <div className="font-bold text-[13px] text-ink dark:text-slate-200">
                           Đánh giá chất lượng thực hiện gói thầu:
@@ -574,7 +571,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                           >
                             Hủy
                           </button>
-                          <button type="submit" className="btn-gold">
+                          <button type="submit" className="btn-primary">
                             Lưu đánh giá
                           </button>
                         </div>
@@ -698,10 +695,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         key={inc.id}
                         className={`p-4 rounded-2xl border text-xs flex flex-col justify-between ${
                           isResolved
-                            ? 'bg-parchment dark:bg-night-line/40 border-line dark:border-night-line'
+                            ? 'bg-white dark:bg-night-line/40 border-line dark:border-night-line'
                             : inc.severity === 'critical' || inc.severity === 'high'
                             ? 'bg-rose-50/60 dark:bg-rose-500/5 border-rose-300 dark:border-rose-500/30'
-                            : 'bg-gold-100/40 dark:bg-gold-500/5 border-gold-500/30 dark:border-gold-500/25'
+                            : 'bg-amber-50/70 dark:bg-amber-500/5 border-amber-300/70 dark:border-amber-500/25'
                         }`}
                       >
                         <div>
@@ -822,7 +819,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                             ? 'bg-pine-100/50 dark:bg-pine-600/10 border-pine-500/40 dark:border-pine-600/40'
                             : isOverdue
                             ? 'bg-rose-50/60 dark:bg-rose-500/5 border-rose-300 dark:border-rose-500/30'
-                            : 'bg-parchment dark:bg-night-line/40 border-line dark:border-night-line'
+                            : 'bg-white dark:bg-night-line/40 border-line dark:border-night-line'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
@@ -899,7 +896,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         <tr key={m.id}>
                           <td className="font-bold text-ink dark:text-slate-100">
                             <div className="flex items-center gap-2">
-                              <Receipt className="w-4 h-4 text-gold-600 shrink-0" />
+                              <Receipt className="w-4 h-4 text-indigo-500 shrink-0" />
                               <div>
                                 <div>{m.title}</div>
                                 {(m.receiptUrl || m.proofFile) && (

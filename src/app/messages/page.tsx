@@ -115,14 +115,14 @@ export default function MessagesPage() {
         onClick={() => handleSelectChannel(ch)}
         className={`w-full text-left px-3.5 py-3 rounded-2xl transition-all flex items-start gap-3 cursor-pointer ${
           isActive
-            ? 'bg-pine-100 dark:bg-navy-800 shadow-xs'
-            : 'hover:bg-cream dark:hover:bg-night-line/60'
+            ? 'bg-indigo-50 dark:bg-indigo-500/15 shadow-xs ring-1 ring-indigo-100 dark:ring-indigo-500/20'
+            : 'hover:bg-slate-50 dark:hover:bg-white/5'
         }`}
       >
         {ch.kind === 'dm' ? (
           <Avatar text={otherUser?.avatar || ch.otherUserName.slice(0, 2)} size="md" tone="navy" />
         ) : (
-          <span className="w-10 h-10 rounded-full bg-navy-100 text-navy-800 dark:bg-navy-700/40 dark:text-navy-100 flex items-center justify-center shrink-0">
+          <span className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300 flex items-center justify-center shrink-0">
             <MessageSquare className="w-4 h-4" />
           </span>
         )}

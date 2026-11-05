@@ -39,7 +39,9 @@ export function SectionCard({
 const TONE_RING: Record<string, string> = {
   pine: 'bg-pine-100 text-pine-700 dark:bg-pine-600/15 dark:text-pine-500',
   gold: 'bg-gold-100 text-gold-600 dark:bg-gold-500/15 dark:text-gold-400',
-  navy: 'bg-navy-100 text-navy-800 dark:bg-navy-700/30 dark:text-navy-100',
+  navy: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300',
+  indigo: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300',
+  teal: 'bg-teal-50 text-teal-600 dark:bg-teal-500/15 dark:text-teal-300',
   rose: 'bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400',
   slate: 'bg-slate-100 text-slate-600 dark:bg-slate-500/15 dark:text-slate-300',
 };
@@ -51,13 +53,18 @@ export function StatCard({
   icon,
   tone = 'pine',
   onClick,
+  spark,
+  valueClassName,
 }: {
   label: string;
   value: React.ReactNode;
-  sub?: string;
+  sub?: React.ReactNode;
   icon?: React.ReactNode;
   tone?: keyof typeof TONE_RING;
   onClick?: () => void;
+  /** Sparkline thật (tính từ dữ liệu) hiển thị ở góc phải hàng nhãn — thay cho icon. */
+  spark?: React.ReactNode;
+  valueClassName?: string;
 }) {
   const inner = (
     <>
@@ -65,13 +72,14 @@ export function StatCard({
         <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-ink-soft dark:text-slate-400">
           {label}
         </div>
-        {icon && (
-          <span className={cn('w-9 h-9 rounded-xl flex items-center justify-center shrink-0', TONE_RING[tone])}>
-            {icon}
-          </span>
-        )}
+        {spark ??
+          (icon && (
+            <span className={cn('w-9 h-9 rounded-xl flex items-center justify-center shrink-0', TONE_RING[tone])}>
+              {icon}
+            </span>
+          ))}
       </div>
-      <div className="text-[28px] leading-none font-extrabold font-tabular text-ink dark:text-white mt-2">
+      <div className={cn('text-[26px] leading-none font-black font-tabular text-ink dark:text-white mt-2', valueClassName)}>
         {value}
       </div>
       {sub && <div className="text-xs text-ink-soft dark:text-slate-400 mt-2">{sub}</div>}
@@ -100,7 +108,7 @@ export function ProgressBar({
   h = 'h-2',
 }: {
   value: number;
-  tone?: 'pine' | 'gold' | 'rose' | 'navy';
+  tone?: 'pine' | 'gold' | 'rose' | 'navy' | 'gradient';
   className?: string;
   h?: string;
 }) {
@@ -111,13 +119,20 @@ export function ProgressBar({
       : tone === 'rose'
         ? 'bg-rose-500'
         : tone === 'navy'
-          ? 'bg-navy-800 dark:bg-navy-100'
-          : 'bg-pine-500';
+          ? 'bg-indigo-500'
+          : tone === 'gradient'
+            ? ''
+            : 'bg-pine-500';
   return (
-    <div className={cn('w-full rounded-full bg-slate-200/80 dark:bg-slate-700/60 overflow-hidden', h, className)}>
+    <div className={cn('w-full rounded-full bg-cream-deep dark:bg-slate-700/60 overflow-hidden', h, className)}>
       <div
         className={cn('h-full rounded-full transition-all duration-700', bar)}
-        style={{ width: `${v}%` }}
+        style={{
+          width: `${v}%`,
+          ...(tone === 'gradient'
+            ? { background: 'linear-gradient(90deg, #6366F1, #10B981)' }
+            : undefined),
+        }}
       />
     </div>
   );
@@ -135,10 +150,10 @@ export function Avatar({
   const s = size === 'sm' ? 'w-8 h-8 text-[10px]' : size === 'lg' ? 'w-12 h-12 text-sm' : 'w-10 h-10 text-xs';
   const t =
     tone === 'gold'
-      ? 'bg-gold-500 text-navy-950'
+      ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white'
       : tone === 'pine'
-        ? 'bg-pine-600 text-white'
-        : 'bg-navy-900 text-gold-400 dark:bg-navy-800';
+        ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white'
+        : 'bg-gradient-to-br from-teal-600 to-emerald-500 text-white';
   return (
     <span className={cn('rounded-full flex items-center justify-center font-bold shrink-0 select-none', s, t)}>
       {text}
@@ -160,7 +175,7 @@ export function EmptyState({
   return (
     <div className="flex flex-col items-center justify-center text-center py-12 px-6">
       {icon && (
-        <div className="w-14 h-14 rounded-2xl bg-cream-deep dark:bg-night-line flex items-center justify-center text-ink-soft dark:text-slate-400 mb-3">
+        <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-400 dark:text-indigo-300 mb-3">
           {icon}
         </div>
       )}

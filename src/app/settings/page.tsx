@@ -69,7 +69,7 @@ export default function SettingsPage() {
           >
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0">
-                <span className="w-10 h-10 rounded-xl bg-gold-100 text-gold-600 dark:bg-gold-500/15 dark:text-gold-400 flex items-center justify-center shrink-0">
+                <span className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300 flex items-center justify-center shrink-0">
                   <Sun className="w-5 h-5" />
                 </span>
                 <div className="min-w-0">
@@ -155,9 +155,9 @@ export default function SettingsPage() {
           </section>
 
           {/* 4. Architecture Note */}
-          <div className="rounded-[20px] bg-cream-deep/60 dark:bg-night-line/50 border border-line dark:border-night-line p-5 text-[13px] text-ink-soft dark:text-slate-400 space-y-1.5">
+          <div className="rounded-[20px] bg-slate-100/70 dark:bg-night-line/50 border border-line dark:border-night-line p-5 text-[13px] text-ink-soft dark:text-slate-400 space-y-1.5">
             <strong className="flex items-center gap-2 font-bold text-ink dark:text-slate-200">
-              <Info className="w-4 h-4 text-gold-600" />
+              <Info className="w-4 h-4 text-indigo-500" />
               Lưu trữ dữ liệu ở bản demo hiện tại:
             </strong>
             <p>

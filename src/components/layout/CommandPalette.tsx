@@ -67,7 +67,7 @@ export function CommandPalette() {
       role="dialog"
       aria-modal="true"
       aria-label="Bảng lệnh tìm kiếm nhanh"
-      className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-navy-950/65 backdrop-blur-sm animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-slate-950/55 backdrop-blur-sm animate-in fade-in duration-150"
       onClick={() => setOpen(false)}
     >
       <div
@@ -76,13 +76,13 @@ export function CommandPalette() {
       >
         <Command className="w-full">
           <div className="flex items-center px-5 border-b border-line dark:border-night-line bg-parchment dark:bg-night-card">
-            <Search className="w-5 h-5 text-gold-600 mr-3 shrink-0" />
+            <Search className="w-5 h-5 text-indigo-500 mr-3 shrink-0" />
             <Command.Input
               autoFocus
               placeholder="Gõ để tìm kiếm dự án, nhiệm vụ, hoặc chuyển trang..."
               className="w-full py-4 bg-transparent outline-none text-ink dark:text-slate-100 placeholder:text-ink-soft/70 text-[15px] font-medium"
             />
-            <kbd className="hidden sm:inline-block px-2 py-0.5 text-[11px] font-mono text-ink-soft bg-cream-deep dark:bg-night-line rounded-md border border-line dark:border-night-line">
+            <kbd className="hidden sm:inline-block px-2 py-0.5 text-[11px] font-mono text-ink-soft bg-slate-100 dark:bg-night-line rounded-md">
               ESC để đóng
             </kbd>
           </div>
@@ -96,7 +96,7 @@ export function CommandPalette() {
             <Command.Group heading={<span className="eyebrow px-2">Trang chức năng</span>}>
               <Command.Item
                 onSelect={() => runCommand(() => router.push('/'))}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-pine-100 dark:data-[selected=true]:bg-pine-600/15 data-[selected=true]:text-navy-900 dark:data-[selected=true]:text-white hover:bg-cream dark:hover:bg-night-line transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-indigo-50 dark:data-[selected=true]:bg-indigo-500/15 data-[selected=true]:text-indigo-700 dark:data-[selected=true]:text-white hover:bg-indigo-50/60 dark:hover:bg-white/5 transition-colors"
               >
                 <Building2 className="w-4 h-4 text-ink-soft" />
                 <span>Trang tổng quan chỉ đạo & mục tiêu</span>
@@ -104,7 +104,7 @@ export function CommandPalette() {
 
               <Command.Item
                 onSelect={() => runCommand(() => router.push('/projects'))}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-pine-100 dark:data-[selected=true]:bg-pine-600/15 data-[selected=true]:text-navy-900 dark:data-[selected=true]:text-white hover:bg-cream dark:hover:bg-night-line transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-indigo-50 dark:data-[selected=true]:bg-indigo-500/15 data-[selected=true]:text-indigo-700 dark:data-[selected=true]:text-white hover:bg-indigo-50/60 dark:hover:bg-white/5 transition-colors"
               >
                 <Building2 className="w-4 h-4 text-ink-soft" />
                 <span>Danh mục Kế hoạch & Dự án ({visibleProjects.length})</span>
@@ -113,7 +113,7 @@ export function CommandPalette() {
               {currentUser.role === 'assignee' && (
                 <Command.Item
                   onSelect={() => runCommand(() => router.push('/my-tasks'))}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-pine-100 dark:data-[selected=true]:bg-pine-600/15 data-[selected=true]:text-navy-900 dark:data-[selected=true]:text-white hover:bg-cream dark:hover:bg-night-line transition-colors"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-indigo-50 dark:data-[selected=true]:bg-indigo-500/15 data-[selected=true]:text-indigo-700 dark:data-[selected=true]:text-white hover:bg-indigo-50/60 dark:hover:bg-white/5 transition-colors"
                 >
                   <CheckSquare className="w-4 h-4 text-ink-soft" />
                   <span>Việc của tôi (Thầy Nguyễn Văn Tuấn Kiệt)</span>
@@ -124,7 +124,7 @@ export function CommandPalette() {
               {(currentUser.role === 'admin' || currentUser.role === 'leader') && (
                 <Command.Item
                   onSelect={() => runCommand(() => router.push('/reports'))}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-pine-100 dark:data-[selected=true]:bg-pine-600/15 data-[selected=true]:text-navy-900 dark:data-[selected=true]:text-white hover:bg-cream dark:hover:bg-night-line transition-colors"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-indigo-50 dark:data-[selected=true]:bg-indigo-500/15 data-[selected=true]:text-indigo-700 dark:data-[selected=true]:text-white hover:bg-indigo-50/60 dark:hover:bg-white/5 transition-colors"
                 >
                   <FileText className="w-4 h-4 text-ink-soft" />
                   <span>Báo cáo tiến độ & Xuất PDF</span>
@@ -135,14 +135,14 @@ export function CommandPalette() {
                 <>
                   <Command.Item
                     onSelect={() => runCommand(() => router.push('/users'))}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-pine-100 dark:data-[selected=true]:bg-pine-600/15 data-[selected=true]:text-navy-900 dark:data-[selected=true]:text-white hover:bg-cream dark:hover:bg-night-line transition-colors"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-indigo-50 dark:data-[selected=true]:bg-indigo-500/15 data-[selected=true]:text-indigo-700 dark:data-[selected=true]:text-white hover:bg-indigo-50/60 dark:hover:bg-white/5 transition-colors"
                   >
                     <Users className="w-4 h-4 text-ink-soft" />
                     <span>Quản lý người dùng & phân quyền</span>
                   </Command.Item>
                   <Command.Item
                     onSelect={() => runCommand(() => router.push('/audit-logs'))}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-pine-100 dark:data-[selected=true]:bg-pine-600/15 data-[selected=true]:text-navy-900 dark:data-[selected=true]:text-white hover:bg-cream dark:hover:bg-night-line transition-colors"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-indigo-50 dark:data-[selected=true]:bg-indigo-500/15 data-[selected=true]:text-indigo-700 dark:data-[selected=true]:text-white hover:bg-indigo-50/60 dark:hover:bg-white/5 transition-colors"
                   >
                     <History className="w-4 h-4 text-ink-soft" />
                     <span>Nhật ký hoạt động hệ thống</span>
@@ -152,7 +152,7 @@ export function CommandPalette() {
 
               <Command.Item
                 onSelect={() => runCommand(() => router.push('/settings'))}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-pine-100 dark:data-[selected=true]:bg-pine-600/15 data-[selected=true]:text-navy-900 dark:data-[selected=true]:text-white hover:bg-cream dark:hover:bg-night-line transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-indigo-50 dark:data-[selected=true]:bg-indigo-500/15 data-[selected=true]:text-indigo-700 dark:data-[selected=true]:text-white hover:bg-indigo-50/60 dark:hover:bg-white/5 transition-colors"
               >
                 <Settings className="w-4 h-4 text-ink-soft" />
                 <span>Cài đặt hệ thống & Giao diện</span>
@@ -166,10 +166,10 @@ export function CommandPalette() {
                   <Command.Item
                     key={p.id}
                     onSelect={() => runCommand(() => router.push(`/projects/${p.id}`))}
-                    className="flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-pine-100 dark:data-[selected=true]:bg-pine-600/15 data-[selected=true]:text-navy-900 dark:data-[selected=true]:text-white hover:bg-cream dark:hover:bg-night-line transition-colors"
+                    className="flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-indigo-50 dark:data-[selected=true]:bg-indigo-500/15 data-[selected=true]:text-indigo-700 dark:data-[selected=true]:text-white hover:bg-indigo-50/60 dark:hover:bg-white/5 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-navy-100 dark:bg-navy-700/40 text-navy-800 dark:text-navy-100">
+                      <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-200">
                         {p.code}
                       </span>
                       <span className="font-medium truncate max-w-md">{p.name}</span>
@@ -189,10 +189,10 @@ export function CommandPalette() {
                     onSelect={() =>
                       runCommand(() => router.push(`/projects/${t.projectId}?tab=tasks&taskId=${t.id}`))
                     }
-                    className="flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-pine-100 dark:data-[selected=true]:bg-pine-600/15 data-[selected=true]:text-navy-900 dark:data-[selected=true]:text-white hover:bg-cream dark:hover:bg-night-line transition-colors"
+                    className="flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-indigo-50 dark:data-[selected=true]:bg-indigo-500/15 data-[selected=true]:text-indigo-700 dark:data-[selected=true]:text-white hover:bg-indigo-50/60 dark:hover:bg-white/5 transition-colors"
                   >
                     <div className="flex items-center gap-2 truncate">
-                      <span className="w-2 h-2 rounded-full bg-gold-500 shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
                       <span className="truncate">{t.title}</span>
                     </div>
                     <span className="text-xs font-mono text-ink-soft shrink-0">{t.progress}%</span>
@@ -205,16 +205,16 @@ export function CommandPalette() {
             <Command.Group heading={<span className="eyebrow px-2">Thao tác nhanh</span>}>
               <Command.Item
                 onSelect={() => runCommand(() => toggleTheme())}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-pine-100 dark:data-[selected=true]:bg-pine-600/15 hover:bg-cream dark:hover:bg-night-line transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm text-ink dark:text-slate-200 data-[selected=true]:bg-indigo-50 dark:data-[selected=true]:bg-indigo-500/15 hover:bg-indigo-50/60 dark:hover:bg-white/5 transition-colors"
               >
                 {theme === 'dark' ? (
                   <>
-                    <Sun className="w-4 h-4 text-gold-600" />
+                    <Sun className="w-4 h-4 text-amber-500" />
                     <span>Chuyển sang giao diện Sáng</span>
                   </>
                 ) : (
                   <>
-                    <Moon className="w-4 h-4 text-navy-700 dark:text-navy-100" />
+                    <Moon className="w-4 h-4 text-slate-500 dark:text-slate-300" />
                     <span>Chuyển sang giao diện Tối</span>
                   </>
                 )}

@@ -46,7 +46,7 @@ export function WorkflowStepper({
             )}
           </div>
           <h2 className="text-base sm:text-lg font-extrabold text-ink dark:text-white mt-1.5">
-            Bước {currentStep}: <span className="text-gold-600 dark:text-gold-400">{currentStepObj.name.replace(/^Bước \d+:\s*/, '')}</span>
+            Bước {currentStep}: <span className="text-indigo-600 dark:text-indigo-300">{currentStepObj.name.replace(/^Bước \d+:\s*/, '')}</span>
           </h2>
         </div>
         <StatusBadge tone="navy" className="shrink-0 self-start">
@@ -54,7 +54,7 @@ export function WorkflowStepper({
         </StatusBadge>
       </div>
 
-      <ProgressBar value={(currentStep / 9) * 100} tone="gold" h="h-1.5" />
+      <ProgressBar value={(currentStep / 9) * 100} tone="gradient" h="h-1.5" />
 
       {/* Stepper: thin connector line, node states pine / gold-ring navy / slate */}
       <div className="overflow-x-auto pb-1">
@@ -78,10 +78,10 @@ export function WorkflowStepper({
                     className={cn(
                       'w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold font-tabular transition-all',
                       isCurrent
-                        ? 'bg-navy-900 text-gold-400 ring-[3px] ring-gold-500 ring-offset-2 ring-offset-parchment dark:ring-offset-night-card shadow-md'
+                        ? 'bg-indigo-600 text-white ring-[3px] ring-indigo-300 dark:ring-indigo-500/40 ring-offset-2 ring-offset-white dark:ring-offset-night-card shadow-md shadow-indigo-500/30'
                         : isCompleted
                           ? 'bg-pine-600 text-white'
-                          : 'bg-slate-200/80 text-slate-500 dark:bg-slate-700/60 dark:text-slate-400 group-hover:bg-cream-deep'
+                          : 'bg-slate-200/80 text-slate-500 dark:bg-slate-700/60 dark:text-slate-400 group-hover:bg-slate-300/70'
                     )}
                   >
                     {isCompleted ? <Check className="w-4 h-4" /> : s.step}
@@ -90,7 +90,7 @@ export function WorkflowStepper({
                     className={cn(
                       'text-[11px] leading-tight text-center line-clamp-2',
                       isCurrent
-                        ? 'font-extrabold text-navy-900 dark:text-white'
+                        ? 'font-extrabold text-indigo-600 dark:text-white'
                         : isCompleted
                           ? 'font-semibold text-pine-700 dark:text-pine-500'
                           : 'font-medium text-ink-soft dark:text-slate-400'
@@ -116,8 +116,8 @@ export function WorkflowStepper({
       </div>
 
       {/* Step Description Box */}
-      <div className="p-4 rounded-2xl bg-cream dark:bg-night-line/40 border border-line dark:border-night-line text-[13px] text-ink-soft dark:text-slate-300 flex items-start gap-2.5">
-        <HelpCircle className="w-4 h-4 text-gold-600 dark:text-gold-400 shrink-0 mt-0.5" />
+      <div className="p-4 rounded-2xl bg-[#F8FAFC] dark:bg-night-line/40 border border-line dark:border-night-line text-[13px] text-ink-soft dark:text-slate-300 flex items-start gap-2.5">
+        <HelpCircle className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
         <div className="space-y-0.5">
           <span className="font-bold text-ink dark:text-white">
             Nội dung trọng tâm Bước {currentStep}:

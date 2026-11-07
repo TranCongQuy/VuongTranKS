@@ -14,6 +14,7 @@ import {
   Play,
   Pause,
   Maximize2,
+  FileText,
 } from 'lucide-react';
 import { formatDateVN } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/cards';
@@ -170,6 +171,11 @@ export function ProjectGallery({ projectId, tasks }: ProjectGalleryProps) {
                           <Video className="w-3 h-3 text-gold-400" />
                           <span>CLIP {item.duration || 7}s</span>
                         </>
+                      ) : item.type === 'document' ? (
+                        <>
+                          <FileText className="w-3 h-3 text-rose-400" />
+                          <span>TÀI LIỆU PDF</span>
+                        </>
                       ) : (
                         <>
                           <ImageIcon className="w-3 h-3 text-sky-400" />
@@ -261,7 +267,14 @@ export function ProjectGallery({ projectId, tasks }: ProjectGalleryProps) {
 
           {/* Media Viewport */}
           <div className="max-w-4xl max-h-[75vh] p-4 flex items-center justify-center overflow-hidden">
-            {currentAttachment.type === 'video' ? (
+            {currentAttachment.type === 'document' ? (
+              <div className="rounded-[20px] border border-night-line bg-navy-950 shadow-2xl p-8 text-center text-slate-200">
+                <FileText className="w-10 h-10 mx-auto text-rose-400" />
+                <p className="font-bold mt-3">{currentAttachment.name}</p>
+                <p className="text-xs text-slate-400 mt-1">Tài liệu PDF (biên bản / CO-CQ) — tải xuống để xem nội dung.</p>
+                <a href={currentAttachment.url} download={currentAttachment.name} className="btn-primary inline-flex mt-4">Tải tài liệu PDF</a>
+              </div>
+            ) : currentAttachment.type === 'video' ? (
               <div className="relative rounded-[20px] overflow-hidden border border-night-line bg-navy-950 shadow-2xl flex flex-col items-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img

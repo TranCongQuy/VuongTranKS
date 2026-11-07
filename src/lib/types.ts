@@ -38,9 +38,9 @@ export const WORKFLOW_9_STEPS: WorkflowStep[] = [
   },
   {
     step: 2,
-    name: 'Bước 2: Hoàn thiện hồ sơ thiết kế & dự toán',
-    shortName: 'B2: Thiết kế & Dự toán',
-    description: 'Khảo sát hiện trạng mặt bằng, hoàn thiện/thẩm tra bản vẽ thiết kế và lập dự toán chi phí.',
+    name: 'Bước 2: Hoàn thiện hồ sơ thiết kế và dự toán',
+    shortName: 'B2: Thiết kế và Dự toán',
+    description: 'Khảo sát hiện trạng mặt bằng, hoàn thiện/thẩm tra bản vẽ thiết kế, lập dự toán chi phí và hồ sơ yêu cầu báo giá / mời chào giá.',
     badgeClass: 'bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border-sky-300 dark:border-sky-700',
     color: '#0284C7',
   },
@@ -56,7 +56,7 @@ export const WORKFLOW_9_STEPS: WorkflowStep[] = [
     step: 4,
     name: 'Bước 4: Thương thảo và ký kết hợp đồng',
     shortName: 'B4: Ký kết HĐ',
-    description: 'Thương thảo điều khoản tạm ứng, nghiệm thu, thanh toán, bảo hành 5% và ký hợp đồng chính thức.',
+    description: 'Thương thảo phạm vi, giá, tiến độ, điều khoản tạm ứng, nghiệm thu, thanh toán, bảo hành và ký hợp đồng chính thức.',
     badgeClass: 'bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300 dark:border-amber-700',
     color: '#D97706',
   },
@@ -64,13 +64,13 @@ export const WORKFLOW_9_STEPS: WorkflowStep[] = [
     step: 5,
     name: 'Bước 5: Lập và phê duyệt kế hoạch triển khai',
     shortName: 'B5: Kế hoạch triển khai',
-    description: 'Duyệt tiến độ tổng thể, biện pháp thi công, ATLĐ, VSMT và thủ tục chi tạm ứng đợt 1.',
+    description: 'Duyệt tiến độ tổng thể và mốc chi tiết, biện pháp thi công, ATLĐ, VSMT, hồ sơ bảo lãnh (nếu có) và thủ tục chi tạm ứng đợt 1.',
     badgeClass: 'bg-orange-50 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300 border-orange-300 dark:border-orange-700',
     color: '#EA580C',
   },
   {
     step: 6,
-    name: 'Bước 6: Tổ chức thi công & giám sát hiện trường',
+    name: 'Bước 6: Tổ chức thi công và giám sát thực hiện',
     shortName: 'B6: Thi công & Giám sát',
     description: 'Bàn giao mặt bằng, thi công hiện trường/xưởng, giám sát chất lượng, CO/CQ và khối lượng phát sinh.',
     badgeClass: 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300 dark:border-rose-700',
@@ -94,8 +94,8 @@ export const WORKFLOW_9_STEPS: WorkflowStep[] = [
   },
   {
     step: 9,
-    name: 'Bước 9: Quyết toán và bảo hành công trình',
-    shortName: 'B9: Quyết toán & Bảo hành',
+    name: 'Bước 9: Hoàn thiện hồ sơ thanh toán và quyết toán',
+    shortName: 'B9: Thanh toán & Quyết toán',
     description: 'Đối chiếu khối lượng thực tế, hóa đơn VAT, chứng thư bảo lãnh 5% và theo dõi nghĩa vụ bảo hành (12-36 tháng).',
     badgeClass: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700',
     color: '#10B981',
@@ -115,6 +115,9 @@ export interface Contract {
   startDate?: string;
   endDate?: string;
   scopeDescription?: string;
+  warrantyNote?: string;
+  performanceGuaranteeExpiry?: string;
+  warrantyGuaranteeExpiry?: string;
 }
 
 export type MilestonePaymentStatus = 'paid' | 'pending' | 'overdue';
@@ -131,6 +134,7 @@ export interface PaymentMilestone {
   status: MilestonePaymentStatus;
   note?: string;
   description?: string;
+  triggerProgress?: number; // % khối lượng kích hoạt thanh toán (vd 50, 80 — theo HĐ STT)
   proofFile?: string;        // Ví dụ: UNC_VCB_Dot1.pdf
   receiptUrl?: string;
 }
@@ -161,6 +165,7 @@ export interface Project {
   endDate: string;   // YYYY-MM-DD
   status: ProjectStatus;
   workflowStep: WorkflowStepId; // 1 đến 9 theo Quy trình chuẩn PXU
+  workflowStepSecondary?: WorkflowStepId; // Bước kép đồng thời (vd SON45 kiêm B8, LCCT kiêm B5, SHCD kiêm B2)
   campus?: 'cs2' | 'tranphu' | 'all';
   contracts?: Contract[]; // Hợp đồng thi công đã ký kết
   completedTasksList?: string[]; // [Đã triển khai / Hoàn thành]
@@ -245,7 +250,7 @@ export interface Attachment {
   id: string;
   taskId?: string;
   projectId?: string;
-  type: 'image' | 'video';
+  type: 'image' | 'video' | 'document';
   url: string; // inline SVG or simulated media data
   name: string;
   size: number; // in bytes
@@ -263,6 +268,9 @@ export interface TaskUpdate {
   progress: number;
   attachments: Attachment[];
   createdAt: string;
+  weather?: string;
+  manpower?: string;
+  logDate?: string;
 }
 
 export interface Message {

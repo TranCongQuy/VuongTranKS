@@ -89,7 +89,7 @@ interface ConstructionStoreState {
   deleteTask: (taskId: string) => void;
   updateTaskProgress: (
     taskId: string,
-    params: { note: string; progress: number; attachments?: Attachment[] }
+    params: { note: string; progress: number; attachments?: Attachment[]; weather?: string; manpower?: string; logDate?: string }
   ) => void;
   approveTask: (taskId: string) => void;
   returnTask: (taskId: string, reason: string) => void;
@@ -110,6 +110,10 @@ interface ConstructionStoreState {
   getProjectIncidents: (projectId: string) => TaskIncident[];
 
   // Financial / Payment Milestones
+  addPaymentMilestone: (
+    projectId: string,
+    data: { title: string; percentage: number; amount: number; dueDate: string; note?: string }
+  ) => void;
   markMilestonePaid: (projectId: string, milestoneId: string) => void;
   getProjectMilestones: (projectId: string) => PaymentMilestone[];
 
@@ -338,6 +342,7 @@ export const useConstructionStore = create<ConstructionStoreState>()(
       },
 
       addProject: (data) => {
+        data = { ...data, name: data.name.trim().slice(0, 200), code: data.code.trim().slice(0, 40), description: (data.description||'').trim().slice(0, 2000), location: (data.location||'').trim().slice(0, 200) };
         const newId = `proj-${Date.now()}`;
         const newProject: Project = {
           ...data,
@@ -548,6 +553,7 @@ export const useConstructionStore = create<ConstructionStoreState>()(
       },
 
       addTask: (data) => {
+        data = { ...data, title: data.title.trim().slice(0, 200), description: data.description.trim().slice(0, 2000) };
         const newId = `task-${Date.now()}`;
         const now = new Date().toISOString();
         const newTask: Task = {
@@ -598,7 +604,8 @@ export const useConstructionStore = create<ConstructionStoreState>()(
         get().addAuditLog('Xóa nhiệm vụ', `Nhiệm vụ: ${task?.title || taskId}`, 'Đã xóa mềm nhiệm vụ');
       },
 
-      updateTaskProgress: (taskId, { note, progress, attachments = [] }) => {
+      updateTaskProgress: (taskId, { note, progress, attachments = [], weather, manpower, logDate }) => {
+        note = note.trim().slice(0, 2000);
         const { tasks, currentUser } = get();
         const targetTask = tasks.find((t) => t.id === taskId);
         if (!targetTask) return;
@@ -615,6 +622,9 @@ export const useConstructionStore = create<ConstructionStoreState>()(
           progress,
           attachments,
           createdAt: now,
+          weather: weather?.trim().slice(0, 60) || undefined,
+          manpower: manpower?.trim().slice(0, 60) || undefined,
+          logDate: logDate || undefined,
         };
 
         // Attach new attachments to attachments pool
@@ -947,6 +957,38 @@ export const useConstructionStore = create<ConstructionStoreState>()(
         });
         return incidents.sort(
           (a, b) => new Date(b.reportedAt).getTime() - new Date(a.reportedAt).getTime()
+        );
+      },
+
+      addPaymentMilestone: (projectId, data) => {
+        const { projects, currentUser } = get();
+        if (currentUser.role !== 'admin') return;
+        const project = projects.find((p) => p.id === projectId);
+        if (!project) return;
+        const existing = project.paymentMilestones || [];
+        const milestone: PaymentMilestone = {
+          id: `pm-${Date.now()}`,
+          projectId,
+          installmentNumber:
+            existing.reduce((max, m) => Math.max(max, m.installmentNumber || 0), 0) + 1,
+          title: data.title,
+          amount: Math.round(data.amount),
+          percentage: data.percentage,
+          dueDate: data.dueDate,
+          status: 'pending',
+          note: data.note,
+        };
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === projectId
+              ? { ...p, paymentMilestones: [...(p.paymentMilestones || []), milestone] }
+              : p
+          ),
+        }));
+        get().addAuditLog(
+          'Thêm mốc thanh toán',
+          `Dự án: ${project.name}`,
+          `Thêm mốc "${milestone.title}" (${milestone.percentage}% = ${milestone.amount.toLocaleString('vi-VN')} VNĐ, hạn ${milestone.dueDate}) bởi ${currentUser.name}`
         );
       },
 

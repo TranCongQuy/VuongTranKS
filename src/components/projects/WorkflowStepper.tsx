@@ -10,12 +10,14 @@ import { cn } from '@/lib/utils';
 
 interface WorkflowStepperProps {
   currentStep: WorkflowStepId;
+  secondaryStep?: WorkflowStepId;
   onStepChange?: (step: WorkflowStepId) => void;
   canEdit?: boolean;
 }
 
 export function WorkflowStepper({
   currentStep,
+  secondaryStep,
   onStepChange,
   canEdit = false,
 }: WorkflowStepperProps) {
@@ -47,6 +49,9 @@ export function WorkflowStepper({
           </div>
           <h2 className="text-base sm:text-lg font-extrabold text-ink dark:text-white mt-1.5">
             Bước {currentStep}: <span className="text-indigo-600 dark:text-indigo-300">{currentStepObj.name.replace(/^Bước \d+:\s*/, '')}</span>
+            {secondaryStep != null && (
+              <span className="ml-2 text-xs font-bold text-amber-600 dark:text-amber-400">(kiêm Bước {secondaryStep})</span>
+            )}
           </h2>
         </div>
         <StatusBadge tone="navy" className="shrink-0 self-start">
@@ -62,6 +67,7 @@ export function WorkflowStepper({
           {WORKFLOW_9_STEPS.map((s, idx) => {
             const isCompleted = s.step < currentStep;
             const isCurrent = s.step === currentStep;
+            const isSecondary = secondaryStep != null && s.step === secondaryStep;
 
             return (
               <React.Fragment key={s.step}>
@@ -79,7 +85,9 @@ export function WorkflowStepper({
                       'w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold font-tabular transition-all',
                       isCurrent
                         ? 'bg-indigo-600 text-white ring-[3px] ring-indigo-300 dark:ring-indigo-500/40 ring-offset-2 ring-offset-white dark:ring-offset-night-card shadow-md shadow-indigo-500/30'
-                        : isCompleted
+                        : isSecondary
+                          ? 'bg-amber-500 text-white ring-[3px] ring-amber-300 dark:ring-amber-500/40 ring-offset-2 ring-offset-white dark:ring-offset-night-card'
+                          : isCompleted
                           ? 'bg-pine-600 text-white'
                           : 'bg-slate-200/80 text-slate-500 dark:bg-slate-700/60 dark:text-slate-400 group-hover:bg-slate-300/70'
                     )}

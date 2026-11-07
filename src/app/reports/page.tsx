@@ -8,6 +8,9 @@ import { useConstructionStore } from '@/lib/store';
 import { Printer, Sparkles } from 'lucide-react';
 import { formatDateVN, formatCurrencyVN } from '@/lib/utils';
 import { TASK_STATUS_CONFIG, CATEGORY_CONFIG, INCIDENT_SEVERITY_CONFIG, INCIDENT_STATUS_CONFIG } from '@/lib/types';
+import Link from 'next/link';
+import { AlertTriangle } from 'lucide-react';
+import { selectAllAlerts } from '@/lib/selectors';
 
 const INCIDENT_TYPE_LABELS: Record<string, string> = {
   weather: 'thời tiết',
@@ -24,6 +27,7 @@ export default function ReportsPage() {
   const calculateProjectProgress = useConstructionStore((s) => s.calculateProjectProgress);
   const currentUser = useConstructionStore((s) => s.currentUser);
   const getProjectIncidents = useConstructionStore((s) => s.getProjectIncidents);
+  const allProjects = useConstructionStore((s) => s.projects);
 
   const visibleProjects = getVisibleProjects();
   const [selectedProjectId, setSelectedProjectId] = useState<string>(visibleProjects[0]?.id || '');
@@ -127,6 +131,26 @@ export default function ReportsPage() {
             />
           </PageHeader>
         </div>
+
+        {/* Cảnh báo tự động toàn trường — selectAllAlerts */}
+        {(() => {
+          const alerts = selectAllAlerts({ projects: allProjects, tasks }, visibleProjects);
+          if (alerts.length === 0) return null;
+          return (
+            <div className="no-print p-4 rounded-[20px] bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30">
+              <div className="flex items-center gap-2 font-bold text-sm text-rose-700 dark:text-rose-300 mb-2">
+                <AlertTriangle className="w-4 h-4" /> Cảnh báo ({alerts.length})
+              </div>
+              <ul className="space-y-1.5">
+                {alerts.slice(0, 15).map((a) => (
+                  <li key={a.id} className="text-[13px]">
+                    <Link href={a.href} className="hover:text-indigo-600 dark:hover:text-indigo-300"><strong>{a.projectCode}</strong> — {a.text}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })()}
 
         {/* Printable Document Sheet */}
         {!project ? (

@@ -5,6 +5,7 @@ import { Task, Attachment, IncidentSeverity } from '@/lib/types';
 import { useConstructionStore } from '@/lib/store';
 import {
   Camera,
+  FileText,
   UploadCloud,
   CheckCircle2,
   Trash2,
@@ -32,6 +33,9 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
 
   const [progress, setProgress] = useState(task ? task.progress : 50);
   const [note, setNote] = useState('');
+  const [weather, setWeather] = useState('');
+  const [manpower, setManpower] = useState('');
+  const [logDate, setLogDate] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -70,16 +74,18 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
 
-        // 1. Kiểm tra định dạng: Chỉ nhận ảnh và video
-        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-          const error = `Tệp "${file.name}" không hợp lệ. Hệ thống chỉ chấp nhận hình ảnh hoặc video clip minh chứng kết quả.`;
+        // 1. Kiểm tra định dạng: ảnh, video hoặc tài liệu PDF (biên bản / CO-CQ)
+        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+        if (!file.type.startsWith('image/') && !file.type.startsWith('video/') && !isPdf) {
+          const error = `Tệp "${file.name}" không hợp lệ. Hệ thống chỉ chấp nhận hình ảnh, video hoặc tài liệu PDF (biên bản, CO/CQ).`;
           errors.push(error);
           continue;
         }
+        const safeName = file.name.replace(/[/\\]/g, '_').replace(/[^\p{L}\p{N}._()\- ]/gu, '_').slice(0, 120) || 'tai-lieu.pdf';
 
         // 2. Kiểm tra dung lượng tối đa 1,5MB/file — file lớn hơn bị bỏ qua
         if (file.size > MAX_SIZE_BYTES) {
-          const error = `"${file.name}": Ảnh vượt quá 1,5MB, vui lòng nén hoặc chọn ảnh nhỏ hơn`;
+          const error = `"${file.name}": Tệp vượt quá 1,5MB, vui lòng nén hoặc chọn tệp nhỏ hơn`;
           errors.push(error);
           continue;
         }
@@ -119,8 +125,8 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
           id: `att-upload-${Date.now()}-${i}`,
           taskId: task.id,
           projectId: task.projectId,
-          type: file.type.startsWith('video/') ? 'video' : 'image',
-          name: file.name,
+          type: isPdf ? 'document' : file.type.startsWith('video/') ? 'video' : 'image',
+          name: safeName,
           size: file.size,
           duration,
           url: dataUrl,
@@ -160,15 +166,18 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
     setIsSubmitting(true);
     setTimeout(() => {
       updateTaskProgress(task.id, {
-        note,
+        note: note.trim().slice(0, 2000),
         progress,
         attachments,
+        weather: weather || undefined,
+        manpower: manpower || undefined,
+        logDate: logDate || undefined,
       });
 
       // If there's an incident reported
       if (hasIncident && incidentTitle.trim()) {
         addIncident(task.id, {
-          title: incidentTitle.trim(),
+          title: incidentTitle.trim().slice(0, 200),
           type: incidentType,
           severity: incidentSeverity,
           description: incidentDescription.trim() || 'Phát sinh trở ngại ghi nhận tại hiện trường.',
@@ -306,11 +315,35 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
               <textarea
                 required
                 rows={3}
+                maxLength={2000}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="Mô tả cụ thể khối lượng đã làm hôm nay, chủng loại vật tư, kết quả đo đạc..."
                 className="input text-[13px]"
               />
+            </div>
+
+            {/* Nhật ký B7: ngày, thời tiết, nhân lực */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="lbl">Ngày thi công</label>
+                <input type="date" value={logDate} onChange={(e) => setLogDate(e.target.value)} className="input" />
+              </div>
+              <div>
+                <label className="lbl">Thời tiết</label>
+                <select value={weather} onChange={(e) => setWeather(e.target.value)} className="input">
+                  <option value="">— Chưa ghi —</option>
+                  <option value="Nắng">Nắng</option>
+                  <option value="Nhiều mây">Nhiều mây</option>
+                  <option value="Mưa nhỏ">Mưa nhỏ</option>
+                  <option value="Mưa lớn">Mưa lớn</option>
+                  <option value="Giông/bão">Giông/bão</option>
+                </select>
+              </div>
+              <div>
+                <label className="lbl">Nhân lực (người/ca)</label>
+                <input type="text" maxLength={60} value={manpower} onChange={(e) => setManpower(e.target.value)} placeholder="Vd: 12 công nhân + 2 kỹ thuật" className="input" />
+              </div>
             </div>
 
             {/* Mục phát sinh / Sự cố hiện trường (Incident Reporting) */}
@@ -409,7 +442,7 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
             {/* Attachments Upload Section */}
             <div>
               <label className="lbl">
-                Đính kèm ảnh / video minh chứng (Tối đa 1,5MB/tệp — demo, video ≤ 10 phút)
+                Đính kèm ảnh / video / tài liệu PDF — biên bản, CO/CQ (Tối đa 1,5MB/tệp — demo, video ≤ 10 phút)
               </label>
 
               {/* Hidden File Inputs */}
@@ -417,7 +450,7 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept="image/*,video/*"
+                accept="image/*,video/*,application/pdf,.pdf"
                 onChange={handleFilesSelected}
                 className="hidden"
               />
@@ -438,7 +471,7 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
                 >
                   <UploadCloud className="w-5 h-5 text-pine-600" />
                   <span className="text-xs font-bold text-ink dark:text-slate-300">
-                    Chọn ảnh / video
+                    Chọn ảnh / video / PDF
                   </span>
                   <span className="text-[10px] text-ink-soft dark:text-slate-400">Từ máy tính / thư viện</span>
                 </button>
@@ -480,6 +513,8 @@ export function TaskUpdateModal({ task, onClose, onSuccess }: TaskUpdateModalPro
                         <div className="flex items-center gap-2 min-w-0">
                           {att.type === 'video' ? (
                             <Film className="w-4 h-4 text-gold-600 dark:text-gold-400 shrink-0" />
+                          ) : att.type === 'document' ? (
+                            <FileText className="w-4 h-4 text-rose-500 shrink-0" />
                           ) : (
                             <ImageIcon className="w-4 h-4 text-sky-500 shrink-0" />
                           )}

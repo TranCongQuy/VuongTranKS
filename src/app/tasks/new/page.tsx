@@ -56,8 +56,8 @@ export default function NewTaskPage() {
 
     const newTaskId = addTask({
       projectId,
-      title,
-      description,
+      title: title.trim().slice(0, 200),
+      description: description.trim().slice(0, 2000),
       assigneeId,
       status: 'todo',
       progress: 0,
@@ -121,6 +121,7 @@ export default function NewTaskPage() {
                 required
                 type="text"
                 value={title}
+                maxLength={200}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Ví dụ: Hoàn tất tích hợp API thanh toán, Thu thập minh chứng kiểm định..."
                 className="input font-semibold"

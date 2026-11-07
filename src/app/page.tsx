@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
 import {
   ResponsiveContainer,
@@ -45,6 +46,7 @@ import {
   selectProjectAcceptedProgress,
   selectWeightedTimeProgress,
   getProjectContractValue,
+  selectAllAlerts,
 } from '@/lib/selectors';
 import {
   Task,
@@ -307,6 +309,7 @@ const SEVERITY_SHORT: Record<string, string> = {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [selectedApprovalTask, setSelectedApprovalTask] = useState<Task | null>(null);
   const [selectedUpdateTask, setSelectedUpdateTask] = useState<Task | null>(null);
 
@@ -428,6 +431,7 @@ export default function DashboardPage() {
   const mostOverdueProject = mostOverdueTask
     ? visibleProjects.find((p) => p.id === mostOverdueTask.projectId)
     : undefined;
+  const projectAlerts = selectAllAlerts({ projects: allProjects, tasks }, visibleProjects);
 
   // 6 tháng gần nhất (kết thúc ở tháng hiện tại) — khung thời gian cho
   // biểu đồ vùng + sparkline khởi công.
@@ -1160,11 +1164,11 @@ export default function DashboardPage() {
                 subtitle="Đường liền: % khối lượng đã nghiệm thu (luỹ kế, trọng số kinh phí) · Đường đứt: kế hoạch theo thời gian"
                 action={
                   isAdmin ? (
-                    <Link href="/reports" className="btn-quiet">
+                    <Link href="/reports" className="text-xs font-bold text-indigo-600 dark:text-indigo-300 hover:underline">
                       Xem báo cáo →
                     </Link>
                   ) : (
-                    <Link href="/projects" className="btn-quiet">
+                    <Link href="/projects" className="text-xs font-bold text-indigo-600 dark:text-indigo-300 hover:underline">
                       Xem dự án →
                     </Link>
                   )
@@ -1264,7 +1268,20 @@ export default function DashboardPage() {
                       return (
                         <div
                           key={t.id}
-                          className="flex items-center gap-[11px] py-2.5 border-b border-dashed border-line dark:border-night-line last:border-b-0 last:pb-0 first:pt-0"
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => {
+                            if (isAdmin) setSelectedApprovalTask(t);
+                            else router.push(`/projects/${t.projectId}?tab=tasks&taskId=${t.id}`);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              if (isAdmin) setSelectedApprovalTask(t);
+                              else router.push(`/projects/${t.projectId}?tab=tasks&taskId=${t.id}`);
+                            }
+                          }}
+                          className="flex items-center gap-[11px] py-2.5 border-b border-dashed border-line dark:border-night-line last:border-b-0 last:pb-0 first:pt-0 cursor-pointer hover:bg-indigo-50/40 dark:hover:bg-white/[0.03] rounded-lg px-1 -mx-1 transition-colors"
                         >
                           <span className={cn('w-[33px] h-[33px] rounded-[10px] flex items-center justify-center shrink-0', box)}>
                             <CheckCircle2 className="w-4 h-4" />
@@ -1277,21 +1294,9 @@ export default function DashboardPage() {
                               {proj ? shortCode(proj.code) : 'DỰ ÁN'} · {assigneeName} báo cáo
                             </span>
                           </div>
-                          {isAdmin ? (
-                            <button
-                              onClick={() => setSelectedApprovalTask(t)}
-                              className="shrink-0 text-[10.5px] font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-500/15 dark:text-indigo-300 dark:hover:bg-indigo-500/25 transition-colors cursor-pointer"
-                            >
-                              Duyệt →
-                            </button>
-                          ) : (
-                            <Link
-                              href={`/projects/${t.projectId}?tab=tasks&taskId=${t.id}`}
-                              className="shrink-0 text-[10.5px] font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-500/15 dark:text-indigo-300 transition-colors"
-                            >
-                              Xem →
-                            </Link>
-                          )}
+                          <span className="shrink-0 text-[10.5px] font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300">
+                            {isAdmin ? 'Duyệt →' : 'Xem →'}
+                          </span>
                         </div>
                       );
                     })}
@@ -1375,6 +1380,27 @@ export default function DashboardPage() {
             </motion.div>
           </div>
         </div>
+
+        {/* Cảnh báo tự động — suy ra từ dữ liệu thật qua selectAllAlerts */}
+        {isAdmin && projectAlerts.length > 0 && (
+          <SectionCard
+            title="Cảnh báo"
+            subtitle="Tự động suy ra từ task quá hạn, sự cố, mốc thanh toán và hạn hợp đồng"
+            action={<span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">{projectAlerts.length} cảnh báo</span>}
+          >
+            <ul className="divide-y divide-line dark:divide-night-line">
+              {projectAlerts.slice(0, 12).map((a) => (
+                <li key={a.id} className="py-2">
+                  <Link href={a.href} className="flex items-start gap-2 text-[13px] hover:text-indigo-600 dark:hover:text-indigo-300">
+                    <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${a.severity === 'critical' || a.severity === 'high' ? 'text-rose-500' : a.severity === 'medium' ? 'text-amber-500' : 'text-slate-400'}`} />
+                    <span><strong className="font-bold">{a.projectCode}</strong> — {a.text}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            {projectAlerts.length > 12 && <p className="text-[11px] text-ink-soft dark:text-slate-400 pt-2">…và còn {projectAlerts.length - 12} cảnh báo khác trong các gói.</p>}
+          </SectionCard>
+        )}
 
         {/* Kinh phí & Dòng hoạt động */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">

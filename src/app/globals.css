@@ -232,7 +232,16 @@ h1, h2, h3, .font-display {
   font-size: 12.5px;
   margin: 18px 0 8px;
 }
+/* Vùng cuộn ngang cho bản xem trước A4 trên màn hình hẹp: tài liệu giữ
+   nguyên khổ 820px và cuộn trong container, không tràn trang. Chỉ áp dụng
+   trên màn hình — khi in, container trở về hiển thị bình thường. */
+.print-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100vw;
+}
 @media print {
+  .print-scroll { overflow: visible !important; max-width: none !important; }
   .print-doc { width: 100% !important; max-width: none !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
   .print-doc .doc-table thead { display: table-header-group; }
   .print-doc .doc-table tr { break-inside: avoid; }

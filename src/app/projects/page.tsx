@@ -71,6 +71,9 @@ export default function ProjectsPage() {
   const addProject = useConstructionStore((s) => s.addProject);
   const deleteProject = useConstructionStore((s) => s.deleteProject);
   const updateProject = useConstructionStore((s) => s.updateProject);
+  const updateProjectWorkflowStep = useConstructionStore((s) => s.updateProjectWorkflowStep);
+  const [dragOverStep, setDragOverStep] = useState<number | null>(null);
+  const canDragKanban = currentUser.role === 'admin';
 
   const [viewMode, setViewMode] = useState<'grid' | 'kanban' | 'contracts' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
@@ -125,8 +128,8 @@ export default function ProjectsPage() {
 
     if (editingProjectId) {
       updateProject(editingProjectId, {
-        code: formData.code,
-        name: formData.name,
+        code: formData.code.trim().slice(0, 40),
+        name: formData.name.trim().slice(0, 200),
         description: formData.description,
         location: formData.location,
         category: formData.category,
@@ -462,6 +465,7 @@ export default function ProjectsPage() {
                 <span>
                   Bảng điều hướng quy trình 9 bước chuẩn hóa của Trường Đại học Phú Xuân.
                   Hiển thị vị trí thực tế của toàn bộ {filteredProjects.length} gói thầu.
+                  {canDragKanban ? ' Kéo-thả thẻ gói sang cột khác để đổi bước (Admin).' : ''} Trên điện thoại: mở menu … trên thẻ hoặc mở gói → bấm bước trên Stepper để chuyển.
                 </span>
               </span>
               <span className="text-[11px] font-bold shrink-0">{filteredProjects.length} gói thầu</span>
@@ -471,7 +475,18 @@ export default function ProjectsPage() {
               {projectsByStep.map((col) => (
                 <div
                   key={col.step}
-                  className="w-80 shrink-0 rounded-[20px] bg-slate-100/70 dark:bg-night-card border border-line dark:border-night-line p-4 flex flex-col justify-between max-h-[750px]"
+                  onDragOver={canDragKanban ? (e) => { e.preventDefault(); setDragOverStep(col.step); } : undefined}
+                  onDragLeave={canDragKanban ? () => setDragOverStep((s) => (s === col.step ? null : s)) : undefined}
+                  onDrop={canDragKanban ? (e) => {
+                    e.preventDefault(); setDragOverStep(null);
+                    const pid = e.dataTransfer.getData('text/plain');
+                    const proj = filteredProjects.find((x) => x.id === pid);
+                    if (pid && proj && (proj.workflowStep || 1) !== col.step) {
+                      updateProjectWorkflowStep(pid, col.step as WorkflowStepId);
+                      toast.success(`Đã chuyển gói ${proj.code} sang Bước ${col.step}: ${col.shortName}`);
+                    }
+                  } : undefined}
+                  className={`w-80 shrink-0 rounded-[20px] bg-slate-100/70 dark:bg-night-card border p-4 flex flex-col justify-between max-h-[750px] ${dragOverStep === col.step ? 'border-indigo-400 ring-2 ring-indigo-300/60' : 'border-line dark:border-night-line'}`}
                 >
                   {/* Column Header */}
                   <div>
@@ -502,8 +517,13 @@ export default function ProjectsPage() {
                         col.projects.map((p) => {
                           const progress = calculateProjectProgress(p.id);
                           return (
-                            <Link
+                            <div
                               key={p.id}
+                              draggable={canDragKanban}
+                              onDragStart={canDragKanban ? (e) => { e.dataTransfer.setData('text/plain', p.id); e.dataTransfer.effectAllowed = 'move'; } : undefined}
+                              className={canDragKanban ? 'cursor-grab active:cursor-grabbing' : undefined}
+                            >
+                            <Link
                               href={`/projects/${p.id}`}
                               className="card block p-3.5 hover:border-indigo-300 hover:shadow-md transition-all group"
                             >
@@ -512,7 +532,7 @@ export default function ProjectsPage() {
                                   {p.code}
                                 </span>
                                 <span className="font-tabular font-bold text-xs text-indigo-600 dark:text-indigo-300">
-                                  {progress}%
+                                  {progress}%{p.workflowStepSecondary ? ` · kiêm B${p.workflowStepSecondary}` : ''}
                                 </span>
                               </div>
 
@@ -536,6 +556,18 @@ export default function ProjectsPage() {
                                 </span>
                               </div>
                             </Link>
+                            {canDragKanban && (
+                              <div className="flex justify-end -mt-1" onClick={(e) => e.preventDefault()}>
+                                <RowMenu
+                                  label="Đổi bước quy trình"
+                                  items={WORKFLOW_9_STEPS.filter((s) => s.step !== (p.workflowStep || 1)).map((s) => ({
+                                    label: `Chuyển tới ${s.shortName}`,
+                                    onClick: () => { updateProjectWorkflowStep(p.id, s.step); toast.success(`Đã chuyển gói ${p.code} sang Bước ${s.step}: ${s.shortName}`); },
+                                  }))}
+                                />
+                              </div>
+                            )}
+                            </div>
                           );
                         })
                       )}

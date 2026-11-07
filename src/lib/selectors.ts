@@ -29,7 +29,7 @@
  * ============================================================================
  */
 
-import type { Project, Task } from './types';
+import type { Contract, Project, Task } from './types';
 
 /** Phần state tối thiểu mà các selector tiến độ cần (trích từ store). */
 export interface ProgressStateSlice {
@@ -189,4 +189,125 @@ export function selectWeightedTimeProgress(
     0
   );
   return Math.round((weighted / totalValue) * 100);
+}
+
+/* ============================================================================
+ * TỰ TÍNH TIỀN HỢP ĐỒNG (Phần IV-c) + SELECTOR CẢNH BÁO (Phần IV-d)
+ * Số tiền milestone hiển thị ưu tiên suy ra từ % × giá trị HĐ của gói khi
+ * milestone gắn với 1 HĐ duy nhất / % khớp; hàm dưới là nguồn tính duy nhất.
+ * ==========================================================================*/
+
+export function calcAmountFromRate(contractValue: number, ratePercent: number): number {
+  if (!contractValue || !ratePercent) return 0;
+  return Math.round((contractValue * ratePercent) / 100);
+}
+
+export function deriveContractAmounts(contract: Contract) {
+  const advance = contract.advancePaymentRate ? calcAmountFromRate(contract.contractValue, contract.advancePaymentRate) : 0;
+  const warrantyRate = contract.warrantyRate ?? 5;
+  const warranty = calcAmountFromRate(contract.contractValue, warrantyRate);
+  return { advance, warranty, warrantyRate, vatRate: contract.vatRate };
+}
+
+/** Số tiền hiển thị của 1 milestone: nếu % > 0 và gói có tổng giá trị HĐ/budget, suy ra từ % (làm tròn) khi lệch với amount lưu cứng quá 1.000₫ thì ưu tiên số suy ra cho các mốc chưa thanh toán; mốc đã paid giữ amount lịch sử. */
+export function deriveMilestoneAmount(project: Project, milestone: { percentage: number; amount: number; status: string }): number {
+  if (milestone.status === 'paid') return milestone.amount;
+  if (milestone.percentage > 0) {
+    const base = getProjectContractValue(project);
+    if (base > 0) {
+      const derived = calcAmountFromRate(base, milestone.percentage);
+      // Với gói nhiều HĐ (CT45), % của milestone gộp không suy ra trực tiếp từ tổng — chỉ ưu tiên suy ra khi gần khớp hoặc milestone đơn HĐ.
+      const contractsCount = project.contracts?.length ?? 0;
+      if (contractsCount === 1) return derived;
+      if (Math.abs(derived - milestone.amount) <= 1000) return derived;
+    }
+  }
+  return milestone.amount;
+}
+
+export type AlertKind = 'contract-expiry' | 'milestone-overdue' | 'overdue-task' | 'incident' | 'red-alert' | 'guarantee-missing' | 'handover-overdue';
+export type AlertSeverity = 'critical' | 'high' | 'medium' | 'low';
+export interface ProjectAlert {
+  id: string;
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  kind: AlertKind;
+  severity: AlertSeverity;
+  text: string;
+  href: string;
+}
+
+const SEV_ORDER: Record<AlertSeverity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+function startOfDay(d: Date) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
+
+export function selectProjectAlerts(
+  state: ProgressStateSlice,
+  project: Project,
+  today: Date = new Date()
+): ProjectAlert[] {
+  const alerts: ProjectAlert[] = [];
+  const t0 = startOfDay(today).getTime();
+  const href = `/projects/${project.id}`;
+  const base = { projectId: project.id, projectCode: project.code, projectName: project.name, href };
+  (project.redAlerts || []).forEach((text, i) => alerts.push({ ...base, id: `${project.id}-red-${i}`, kind: 'red-alert', severity: 'high', text }));
+  state.tasks.filter((tk) => tk.projectId === project.id && !tk.isDeleted).forEach((tk) => {
+    if (tk.status !== 'approved' && tk.status !== 'submitted') {
+      const due = startOfDay(new Date(tk.dueDate)).getTime();
+      if (due < t0) alerts.push({ ...base, id: `${project.id}-overdue-${tk.id}`, kind: 'overdue-task', severity: 'high', text: `Task quá hạn: "${tk.title}" (hạn ${tk.dueDate})` });
+    }
+    (tk.incidents || []).filter((inc) => inc.status !== 'resolved' && (inc.severity === 'critical' || inc.severity === 'high')).forEach((inc) => {
+      alerts.push({ ...base, id: `${project.id}-inc-${inc.id}`, kind: 'incident', severity: inc.severity === 'critical' ? 'critical' : 'high', text: `Sự cố ${inc.severity === 'critical' ? 'rất khẩn cấp' : 'nghiêm trọng'}: "${inc.title}"` });
+    });
+  });
+  (project.paymentMilestones || []).filter((m) => m.status !== 'paid').forEach((m) => {
+    const due = startOfDay(new Date(m.dueDate)).getTime();
+    if (due < t0) alerts.push({ ...base, id: `${project.id}-ms-${m.id}`, kind: 'milestone-overdue', severity: 'medium', text: `Mốc thanh toán quá hạn: "${m.title}" (hạn ${m.dueDate})` });
+  });
+  const expiryDates = new Set<string>();
+  (project.contracts || []).forEach((c) => { if (c.endDate) expiryDates.add(c.endDate); });
+  if (project.endDate) expiryDates.add(project.endDate);
+  expiryDates.forEach((d) => {
+    const diff = Math.round((startOfDay(new Date(d)).getTime() - t0) / 86400000);
+    if (diff < 0) alerts.push({ ...base, id: `${project.id}-expiry-${d}`, kind: 'contract-expiry', severity: 'critical', text: `Hợp đồng/hạn gói đã qua hạn ${d} (${Math.abs(diff)} ngày)` });
+    else if (diff <= 7) alerts.push({ ...base, id: `${project.id}-expiry-${d}`, kind: 'contract-expiry', severity: 'critical', text: diff === 0 ? `Hôm nay là hạn chót hợp đồng (${d})` : `Hợp đồng sắp hết hạn ${d} (còn ${diff} ngày)` });
+  });
+  // Bàn giao mặt bằng / bắt đầu triển khai đã tới hạn mà HĐ CHƯA ký kết:
+  // suy ra hoàn toàn từ dữ liệu — contract.startDate đã tới/quá hôm nay,
+  // chưa ghi nhận ngày ký (signDate; Contract không có trường status) và
+  // gói vẫn ở bước ≤4 (B4 chính là bước thương thảo & ký kết hợp đồng).
+  (project.contracts || []).forEach((c) => {
+    if (!c.startDate) return;
+    const start = startOfDay(new Date(c.startDate)).getTime();
+    if (start > t0) return;
+    const contractUnsigned = !c.signDate && project.workflowStep <= 4;
+    if (!contractUnsigned) return;
+    const [y, m, d] = c.startDate.split('-');
+    const dateVN = `${d}/${m}/${y}`;
+    alerts.push({
+      ...base,
+      id: `${project.id}-handover-${c.id}`,
+      kind: 'handover-overdue',
+      severity: 'high',
+      text:
+        start < t0
+          ? `Mốc bàn giao mặt bằng ${dateVN} đã qua — hợp đồng chưa ký kết`
+          : `Mốc bàn giao mặt bằng ${dateVN} là hôm nay — hợp đồng chưa ký kết`,
+    });
+  });
+  (project.contracts || []).forEach((c) => {
+    if (!c.performanceGuaranteeExpiry && !c.warrantyGuaranteeExpiry) {
+      alerts.push({ ...base, id: `${project.id}-guarantee-${c.id}`, kind: 'guarantee-missing', severity: 'low', text: `Chưa ghi nhận hạn bảo lãnh thực hiện/bảo hành cho HĐ ${c.contractNumber} trong hồ sơ` });
+    }
+  });
+  return alerts.sort((a, b) => SEV_ORDER[a.severity] - SEV_ORDER[b.severity]);
+}
+
+export function selectAllAlerts(
+  state: ProgressStateSlice,
+  projects: Project[],
+  today: Date = new Date()
+): ProjectAlert[] {
+  return projects.filter((p) => !p.isDeleted).flatMap((p) => selectProjectAlerts(state, p, today))
+    .sort((a, b) => SEV_ORDER[a.severity] - SEV_ORDER[b.severity]);
 }

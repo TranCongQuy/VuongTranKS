@@ -363,6 +363,11 @@ export function TaskDetailModal({
                       </span>
                     </div>
                     <p className="text-ink-soft dark:text-slate-300 leading-relaxed">{upd.note}</p>
+                    {(upd.weather || upd.manpower || upd.logDate) && (
+                      <p className="text-[11px] text-ink-soft dark:text-slate-400 mt-1">
+                        {upd.logDate ? `Ngày thi công: ${upd.logDate} · ` : ''}{upd.weather ? `Thời tiết: ${upd.weather} · ` : ''}{upd.manpower ? `Nhân lực: ${upd.manpower}` : ''}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>

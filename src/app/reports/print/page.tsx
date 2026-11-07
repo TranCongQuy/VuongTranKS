@@ -103,7 +103,7 @@ export default function PrintReportPage() {
           <ArrowLeft className="w-4 h-4" />
           Quay lại Báo cáo
         </Link>
-        <span className="text-xs font-semibold text-slate-500">
+        <span className="hidden sm:inline text-xs font-semibold text-slate-500">
           Bản xem trước A4 — chọn “Lưu PDF” trong hộp thoại in
         </span>
         <button onClick={() => window.print()} className="btn-primary">
@@ -112,8 +112,9 @@ export default function PrintReportPage() {
         </button>
       </div>
 
-      {/* ===== TÀI LIỆU A4 ===== */}
-      <div className="print-doc mx-auto w-[820px] max-w-[94vw] bg-white px-[18mm] py-[16mm] shadow-xl">
+      {/* ===== TÀI LIỆU A4 (cuộn ngang trong .print-scroll trên màn hình hẹp) ===== */}
+      <div className="print-scroll">
+      <div className="print-doc mx-auto w-[820px] bg-white px-[18mm] py-[16mm] shadow-xl">
         {/* Đầu văn bản */}
         <div className="flex items-start justify-between gap-6 border-b-2 border-slate-900 pb-4">
           <div>
@@ -370,6 +371,7 @@ export default function PrintReportPage() {
           trọng số theo khối lượng đầu việc; tiến độ chung trọng số theo giá trị hợp
           đồng của từng gói.
         </p>
+      </div>
       </div>
     </div>
   );

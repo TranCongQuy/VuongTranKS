@@ -32,7 +32,7 @@ import {
 import type { Project, Task, TaskUpdate, Attachment, Message } from './types';
 
 /** Phiên bản bộ dữ liệu mẫu hiện tại. Tăng số này mỗi khi thay đổi mock-data. */
-export const CURRENT_SEED_VERSION = 2;
+export const CURRENT_SEED_VERSION = 3;
 
 const SAMPLE_PROJECT_ID = /^pkg-\d+$/;
 const SAMPLE_TASK_ID = /^task-\d+-\d+$/;

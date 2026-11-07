@@ -56,10 +56,12 @@ import {
   WORKFLOW_9_STEPS,
 } from '@/lib/types';
 import { formatDateVN, formatDateTimeVN, formatCurrencyVN } from '@/lib/utils';
+import { deriveMilestoneAmount, selectProjectAlerts } from '@/lib/selectors';
 import { toast } from 'sonner';
 
-// 7 PRM tabs
-type ProjectTab = 'overview' | 'tasks' | 'media' | 'incidents' | 'financial' | 'chat' | 'access';
+// 5 tab (đã gom từ 7): Tổng quan (+ Phân quyền ở cuối) · Công việc ·
+// Báo cáo & Sự cố · Hợp đồng & Thanh toán · Trao đổi
+type ProjectTab = 'overview' | 'tasks' | 'reports' | 'financial' | 'chat';
 
 const PROJECT_STATUS_META: Record<string, { label: string; tone: BadgeTone }> = {
   active: { label: 'Đang triển khai', tone: 'pine' },
@@ -90,21 +92,17 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const initialTabParam = searchParams.get('tab');
   const initialTaskId = searchParams.get('taskId');
 
-  // Map query param (kể cả param cũ) sang 7 tab mới:
-  // tasks->tasks, financial->financial, gallery/media->media, chat->chat,
-  // members/activity->access (chỉ admin, còn lại về overview), mặc định -> overview
+  // Map query param (kể cả param của cấu trúc 7 tab cũ) sang 5 tab mới:
+  // media/gallery/incidents -> reports; access/members/activity -> overview
+  // (mục Phân quyền nằm ở cuối tab Tổng quan); còn lại giữ nguyên.
   const getResolvedTab = (tab: string | null): ProjectTab => {
     if (!tab) return 'overview';
     if (tab === 'tasks') return 'tasks';
     if (tab === 'overview') return 'overview';
     if (tab === 'financial') return 'financial';
-    if (tab === 'incidents') return 'incidents';
     if (tab === 'chat') return 'chat';
-    if (tab === 'access') return currentUser.role === 'admin' ? 'access' : 'overview';
-    if (tab === 'gallery' || tab === 'media') return 'media';
-    if (tab === 'members' || tab === 'activity') {
-      return currentUser.role === 'admin' ? 'access' : 'overview';
-    }
+    if (tab === 'reports' || tab === 'media' || tab === 'gallery' || tab === 'incidents') return 'reports';
+    if (tab === 'access' || tab === 'members' || tab === 'activity') return 'overview';
     return 'overview';
   };
 
@@ -142,12 +140,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     return () => clearTimeout(timer);
   }, [initialTaskId, project, currentUser.role, getProjectTasks]);
 
-  // Guard: tab Phân quyền chỉ dành cho admin — role khác bị đưa về Tổng quan
-  // (điều chỉnh state ngay trong render theo pattern React khuyến nghị, thay cho useEffect)
-  if (activeTab === 'access' && currentUser.role !== 'admin') {
-    setActiveTab('overview');
-  }
-
   // Unauthorized view
   if (!project || !hasAccess) {
     return (
@@ -169,6 +161,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   }
 
   const projectTasks = getProjectTasks(project.id);
+  const projectAlerts = selectProjectAlerts({ projects: [project], tasks: projectTasks }, project);
   const progress = calculateProjectProgress(project.id);
   const isLeader = currentUser.role === 'leader';
   const isAdmin = currentUser.role === 'admin';
@@ -192,7 +185,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     project.budgetTotal ||
     (milestones.length > 0 ? milestones.reduce((sum, m) => sum + m.amount, 0) : 0);
   const paidMilestones = milestones.filter((m) => m.status === 'paid');
-  const paidAmount = paidMilestones.reduce((sum, m) => sum + m.amount, 0);
+  const paidAmount = paidMilestones.reduce((sum, m) => sum + deriveMilestoneAmount(project, m), 0);
   const remainingAmount = Math.max(0, totalBudget - paidAmount);
   const paidPercent = totalBudget > 0 ? Math.round((paidAmount / totalBudget) * 100) : 0;
   const nextMilestone = milestones.find((m) => m.status !== 'paid');
@@ -380,8 +373,36 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
+        {/* Cảnh báo của RIÊNG gói này — từ selector dùng chung (text thuần, không nút) */}
+        {projectAlerts.length > 0 && (
+          <div className="card p-4 sm:p-5 !border-rose-300/60 dark:!border-rose-500/30 bg-rose-50/60 dark:bg-rose-500/5">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+              <h3 className="font-bold text-sm text-rose-700 dark:text-rose-300">
+                Cảnh báo của gói thầu này ({projectAlerts.length})
+              </h3>
+            </div>
+            <ul className="space-y-1.5 text-xs sm:text-[13px] text-ink dark:text-slate-200">
+              {projectAlerts.map((a) => (
+                <li key={a.id} className="flex items-start gap-2">
+                  <span
+                    className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${
+                      a.severity === 'critical' || a.severity === 'high'
+                        ? 'bg-rose-500'
+                        : a.severity === 'medium'
+                          ? 'bg-amber-500'
+                          : 'bg-slate-400'
+                    }`}
+                  />
+                  <span>{a.text}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* ========================================================= */}
-        {/* 7 PRM TABS — SegmentedControl variant="tabs"              */}
+        {/* 5 TABS — SegmentedControl variant="tabs"                  */}
         {/* ========================================================= */}
         <SegmentedControl<ProjectTab>
           variant="tabs"
@@ -390,11 +411,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           options={[
             { value: 'overview', label: 'Tổng quan' },
             { value: 'tasks', label: 'Công việc', count: projectTasks.length },
-            { value: 'media', label: 'Báo cáo & Minh chứng' },
-            { value: 'incidents', label: 'Sự cố', count: projectIncidents.length },
-            { value: 'financial', label: `Dòng tiền (${paidPercent}% nộp)` },
+            { value: 'reports', label: 'Báo cáo & Sự cố', count: projectIncidents.length },
+            { value: 'financial', label: `Hợp đồng & Thanh toán (${paidPercent}% nộp)` },
             { value: 'chat', label: 'Trao đổi' },
-            ...(isAdmin ? [{ value: 'access' as ProjectTab, label: 'Phân quyền' }] : []),
           ]}
         />
 
@@ -429,6 +448,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             {/* 9-Step Standard Workflow Stepper */}
             <WorkflowStepper
               currentStep={currentStepNum}
+              secondaryStep={project.workflowStepSecondary}
               onStepChange={(step) => updateProjectWorkflowStep(project.id, step)}
               canEdit={isAdmin}
             />
@@ -582,6 +602,69 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               )}
             </div>
 
+            {/* Phân quyền lãnh đạo — chuyển từ tab riêng vào cuối Tổng quan (chỉ Admin) */}
+            {isAdmin && (
+              <>
+                <ProjectMembers project={project} isReadOnly={false} />
+
+          <ProjectMembers project={project} isReadOnly={false} />
+
+          {/* Bảng phân quyền lãnh đạo theo dự án */}
+          <SectionCard
+            title="Bảng phân quyền lãnh đạo — Dự án này"
+            subtitle="Lãnh đạo chỉ xem được dự án được cấp quyền. Bật công tắc để cấp / thu hồi quyền xem dự án này cho từng lãnh đạo."
+            pad={false}
+          >
+            <div className="overflow-x-auto">
+              <table className="table-base">
+                <thead>
+                  <tr>
+                    <th>Lãnh đạo</th>
+                    <th>Quyền xem dự án này</th>
+                    <th className="text-right">Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allLeaders.map((leader) => {
+                    const canView = (project.leaderIds || []).includes(leader.id);
+                    return (
+                      <tr key={leader.id}>
+                        <td>
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Avatar text={leader.avatar} size="sm" tone="pine" />
+                            <div className="min-w-0">
+                              <div className="font-bold text-[13px] text-ink dark:text-slate-200 truncate">{leader.name}</div>
+                              <div className="text-[11px] text-ink-soft dark:text-slate-400 truncate">{leader.title}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <Switch
+                            checked={canView}
+                            onChange={(v) => toggleLeaderAccess(project.id, leader.id, v)}
+                            label={`Được xem dự án này: ${leader.name}`}
+                          />
+                        </td>
+                        <td className="text-right">
+                          <StatusBadge tone={canView ? 'pine' : 'slate'} dot>
+                            {canView ? 'Được xem dự án này' : 'Không được xem'}
+                          </StatusBadge>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {allLeaders.length === 0 && (
+              <p className="text-xs text-ink-soft dark:text-slate-400 px-5 pb-5">
+                Chưa có tài khoản lãnh đạo nào trong hệ thống.
+              </p>
+            )}
+          </SectionCard>
+              </>
+            )}
+
           </div>
         )}
 
@@ -636,8 +719,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           </div>
         )}
 
-        {/* TAB: BÁO CÁO & MINH CHỨNG */}
-        {activeTab === 'media' && (
+        {/* TAB: BÁO CÁO & SỰ CỐ — minh chứng ở trên, sự cố xếp dọc bên dưới */}
+        {activeTab === 'reports' && (
           <div className="space-y-6">
             {/* Field Proof Gallery (Videos 10 mins & Photos) */}
             <SectionCard
@@ -646,12 +729,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             >
               <ProjectGallery projectId={project.id} tasks={projectTasks} />
             </SectionCard>
-          </div>
-        )}
 
-        {/* TAB: SỰ CỐ — tổng hợp toàn bộ sự cố của dự án (getProjectIncidents) */}
-        {activeTab === 'incidents' && (
-          <div className="space-y-6">
             {/* Incidents & Field Obstacles Integrated Section */}
             <SectionCard
               title={`Nhật trình Sự cố & Trở ngại thi công (${projectIncidents.length})`}
@@ -798,6 +876,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <ProjectContractsCard
               contracts={project.contracts}
               technicalNotes={project.technicalNotes}
+              projectId={project.id}
+              canManage={isAdmin}
             />
 
             {/* Milestones Stepper Visual Track */}
@@ -824,7 +904,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       >
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-white dark:bg-night-card text-ink dark:text-slate-300 border border-line dark:border-night-line">
-                            Đợt {idx + 1} ({m.percentage}%)
+                            Đợt {idx + 1} ({m.triggerProgress ? `đạt ${m.triggerProgress}% KL` : `${m.percentage}%`})
                           </span>
                           {isPaid ? (
                             <StatusBadge tone="pine">
@@ -845,7 +925,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         </div>
 
                         <div className="font-mono font-black text-ink dark:text-white text-sm">
-                          {formatCurrencyVN(m.amount)}
+                          {formatCurrencyVN(deriveMilestoneAmount(project, m))}
                         </div>
 
                         <h4 className="font-bold text-xs text-ink dark:text-slate-200 mt-1 line-clamp-1">
@@ -913,7 +993,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                           </td>
 
                           <td className="font-mono font-bold text-ink dark:text-slate-100 whitespace-nowrap">
-                            {formatCurrencyVN(m.amount)}
+                            {formatCurrencyVN(deriveMilestoneAmount(project, m))}
                           </td>
 
                           <td className="text-ink-soft dark:text-slate-400 max-w-xs">
@@ -984,67 +1064,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           <div className="space-y-6">
             <SectionCard title="Kênh Trao đổi Nội bộ Gói thầu">
               <ProjectChat projectId={project.id} />
-            </SectionCard>
-          </div>
-        )}
-
-        {/* TAB: PHÂN QUYỀN — chỉ admin */}
-        {activeTab === 'access' && isAdmin && (
-          <div className="space-y-6">
-            <ProjectMembers project={project} isReadOnly={false} />
-
-            {/* Bảng phân quyền lãnh đạo theo dự án */}
-            <SectionCard
-              title="Bảng phân quyền lãnh đạo — Dự án này"
-              subtitle="Lãnh đạo chỉ xem được dự án được cấp quyền. Bật công tắc để cấp / thu hồi quyền xem dự án này cho từng lãnh đạo."
-              pad={false}
-            >
-              <div className="overflow-x-auto">
-                <table className="table-base">
-                  <thead>
-                    <tr>
-                      <th>Lãnh đạo</th>
-                      <th>Quyền xem dự án này</th>
-                      <th className="text-right">Trạng thái</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {allLeaders.map((leader) => {
-                      const canView = (project.leaderIds || []).includes(leader.id);
-                      return (
-                        <tr key={leader.id}>
-                          <td>
-                            <div className="flex items-center gap-3 min-w-0">
-                              <Avatar text={leader.avatar} size="sm" tone="pine" />
-                              <div className="min-w-0">
-                                <div className="font-bold text-[13px] text-ink dark:text-slate-200 truncate">{leader.name}</div>
-                                <div className="text-[11px] text-ink-soft dark:text-slate-400 truncate">{leader.title}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td>
-                            <Switch
-                              checked={canView}
-                              onChange={(v) => toggleLeaderAccess(project.id, leader.id, v)}
-                              label={`Được xem dự án này: ${leader.name}`}
-                            />
-                          </td>
-                          <td className="text-right">
-                            <StatusBadge tone={canView ? 'pine' : 'slate'} dot>
-                              {canView ? 'Được xem dự án này' : 'Không được xem'}
-                            </StatusBadge>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              {allLeaders.length === 0 && (
-                <p className="text-xs text-ink-soft dark:text-slate-400 px-5 pb-5">
-                  Chưa có tài khoản lãnh đạo nào trong hệ thống.
-                </p>
-              )}
             </SectionCard>
           </div>
         )}

@@ -36,7 +36,7 @@ export default function PrintMinutesPage() {
         <ArrowLeft className="w-4 h-4" />
         Quay lại
       </Link>
-      <span className="text-xs font-semibold text-slate-500">
+      <span className="hidden sm:inline text-xs font-semibold text-slate-500">
         Biên bản nghiệm thu A4 — chọn “Lưu PDF” trong hộp thoại in
       </span>
       <button onClick={() => window.print()} className="btn-primary">
@@ -91,8 +91,9 @@ export default function PrintMinutesPage() {
     <div className="min-h-screen bg-slate-200/70 dark:bg-night py-6 print:min-h-0 print:bg-white print:py-0">
       {toolbar}
 
-      {/* ===== BIÊN BẢN A4 ===== */}
-      <div className="print-doc mx-auto w-[820px] max-w-[94vw] bg-white px-[18mm] py-[16mm] shadow-xl">
+      {/* ===== BIÊN BẢN A4 (cuộn ngang trong .print-scroll trên màn hình hẹp) ===== */}
+      <div className="print-scroll">
+      <div className="print-doc mx-auto w-[820px] bg-white px-[18mm] py-[16mm] shadow-xl">
         <div className="flex items-start justify-between gap-6 border-b-2 border-slate-900 pb-4">
           <div>
             <div className="font-bold uppercase tracking-wide">Đại học Phú Xuân</div>
@@ -262,6 +263,7 @@ export default function PrintMinutesPage() {
             <div className="font-bold">{approver?.name}</div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

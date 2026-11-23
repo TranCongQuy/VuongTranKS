@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { Project } from '@/lib/types';
 import { useConstructionStore } from '@/lib/store';
 import { ShieldCheck, Users, Eye } from 'lucide-react';

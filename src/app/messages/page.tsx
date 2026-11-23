@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ArrowLeft, MessageSquare, User } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { ProjectChat } from '@/components/projects/ProjectChat';

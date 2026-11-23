@@ -1,15 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { RowMenu } from '@/components/ui/RowMenu';
 import { useConstructionStore } from '@/lib/store';
-import { Printer, Sparkles } from 'lucide-react';
+import { Printer, Sparkles, AlertTriangle } from 'lucide-react';
 import { formatDateVN, formatCurrencyVN } from '@/lib/utils';
 import { TASK_STATUS_CONFIG, CATEGORY_CONFIG, INCIDENT_SEVERITY_CONFIG, INCIDENT_STATUS_CONFIG } from '@/lib/types';
 import Link from 'next/link';
-import { AlertTriangle } from 'lucide-react';
 import { selectAllAlerts } from '@/lib/selectors';
 
 const INCIDENT_TYPE_LABELS: Record<string, string> = {

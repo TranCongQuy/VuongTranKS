@@ -1,5 +1,3 @@
-import React from 'react';
-
 /**
  * Sparkline — đường xu hướng SVG nhỏ (52x18 như bản mẫu Aurora).
  * Dữ liệu PHẢI là chuỗi số thật do nơi gọi tính từ store; component chỉ

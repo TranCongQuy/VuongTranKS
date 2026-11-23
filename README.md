@@ -1,107 +1,148 @@
-# Quản lý Dự án PXU (PXU TaskMaster Pro)
+# HỆ THỐNG QUẢN LÝ DỰ ÁN & GÓI THẦU CẢI TẠO, SỬA CHỮA
+## TRƯỜNG ĐẠI HỌC PHÚ XUÂN (PXU TASKMASTER PRO)
 
-Hệ thống quản lý dự án / gói thầu của **Đại học Phú Xuân (PXU)**: nơi Admin tạo dự án và giao việc, đội giám sát / người thực hiện báo cáo tiến độ tại hiện trường, và lãnh đạo theo dõi, chỉ đạo các dự án được cấp quyền xem.
+Hệ thống Web điều hành và giám sát kỹ thuật chuyên dụng cho 16 hạng mục công trình cải tạo, sửa chữa tại **Trường Đại học Phú Xuân (PXU)**. Hệ thống được chuẩn hóa nghiệp vụ dựa trên:
+- **Quy trình 9 bước quản lý gói thầu chuẩn hóa** (từ phê duyệt chủ trương đến quyết toán & bảo hành).
+- **Hồ sơ hợp đồng thi công thực tế**: HĐ 18/2026, HĐ 08/2026, HĐ 09/2026, HĐ 10/2026, HĐ 22102026 và các báo cáo theo dõi hiện trường.
+- **Mô hình quản trị 3 cấp**: Admin (Chủ trì toàn quyền), Kỹ sư giám sát / Đơn vị thực hiện (Báo cáo hiện trường, ảnh minh chứng, sự cố), Lãnh đạo nhà trường (Theo dõi tiến độ, gửi chỉ đạo).
 
-## Vai trò và quyền
+---
 
-Hệ thống có 3 vai trò:
+## 1. Vai trò và Phân quyền người dùng
 
-### 1. Admin — thầy chủ trì
-- Toàn quyền điều hành hệ thống.
-- Tạo / sửa / xoá dự án (gói thầu), giao nhiệm vụ (task) cho người thực hiện.
-- Duyệt hoặc trả lại báo cáo tiến độ của giám sát.
-- Quản lý thành viên, cấp quyền xem dự án cho từng lãnh đạo.
-- Xem báo cáo tổng hợp, nhật ký hoạt động và mục "Việc của tôi".
+| Vai trò | Người phụ trách mẫu | Quyền hạn chính |
+|---|---|---|
+| **Admin (Chủ trì)** | Thầy Vương | Toàn quyền điều hành: tạo/sửa dự án & gói thầu, phân rã công việc, giao task, duyệt/trả báo cáo tiến độ, xử lý sự cố hiện trường, cấp quyền xem cho lãnh đạo, truy cập toàn bộ 16 route. |
+| **Assignee (Giám sát / Kỹ sư)** | Thầy Kiệt | Xem các gói thầu tham gia; truy cập trung tâm việc làm cá nhân (`/my-tasks`); cập nhật % tiến độ kèm ảnh minh chứng; báo cáo sự cố phát sinh ngoài ý muốn (thời tiết, mặt bằng); trao đổi kỹ thuật. |
+| **Leader (Lãnh đạo nhà trường)** | TS. Nguyễn Văn Dũng, ThS. Hoàng Tuấn | Chỉ truy cập các dự án được Admin cấp quyền; theo dõi biểu đồ tiến độ & dòng tiền; gửi chỉ đạo / kết luận điều hành trực tiếp vào từng gói thầu. Không can thiệp chỉnh sửa dữ liệu kỹ thuật. |
 
-### 2. Giám sát / Người thực hiện (assignee)
-- Xem các dự án mình tham gia và các việc được giao trong mục "Việc của tôi".
-- Báo cáo tiến độ % của nhiệm vụ kèm ảnh minh chứng.
-- Báo cáo sự cố / phát sinh ngoài ý muốn tại hiện trường (ví dụ: thời tiết, vướng mắc mặt bằng) để Admin nắm và xử lý.
-- Trao đổi với Admin và các thành viên trong từng dự án.
+---
 
-### 3. Lãnh đạo (leader)
-- Chỉ xem được những dự án đã được Admin cấp quyền xem — không thấy dự án ngoài phạm vi.
-- Theo dõi tiến độ hoàn thiện của từng dự án được cấp quyền.
-- Gửi chỉ đạo và đánh giá vào dự án.
-- Không giao việc, không sửa dữ liệu nghiệp vụ.
+## 2. Quy trình 9 Bước Quản lý Gói thầu Chuẩn hóa
 
-## Luồng nghiệp vụ
+Mỗi gói thầu tại Đại học Phú Xuân tuân thủ vòng đời 9 bước, được điều hướng trực quan qua bảng **Kanban kéo thả** và thanh **Workflow Stepper**:
 
-1. **Admin tạo dự án** nhà trường / gói thầu và thiết lập các hạng mục, mốc tiến độ.
-2. **Admin giao task** cho giám sát / người thực hiện (có tài khoản theo vai trò).
-3. **Giám sát tới hiện trường**, kiểm tra dự án đạt bao nhiêu % rồi **báo cáo tiến độ kèm ảnh minh chứng**; nếu có phát sinh ngoài ý muốn (thời tiết, sự cố...) thì **báo cáo sự cố** ngay trong nhiệm vụ.
-4. **Admin duyệt hoặc trả lại** báo cáo (trả lại kèm lý do để giám sát bổ sung).
-5. **Lãnh đạo xem** tiến độ các dự án được cấp quyền, **gửi chỉ đạo / đánh giá** khi cần.
-6. Mọi người **trao đổi trong từng dự án** qua mục Trao đổi / tin nhắn theo dự án, Admin tham gia như thành viên điều hành.
+1. **Bước 1 — Phê duyệt chủ trương đầu tư**: Tờ trình đề xuất, xác định phạm vi, kinh phí dự kiến.
+2. **Bước 2 — Hoàn thiện hồ sơ thiết kế và dự toán**: Khảo sát hiện trạng, phê duyệt thiết kế, lập dự toán.
+3. **Bước 3 — Tổ chức lựa chọn nhà thầu**: Chào giá, so sánh phương án, tờ trình đề xuất lựa chọn nhà thầu.
+4. **Bước 4 — Thương thảo và ký kết hợp đồng**: Ký kết hợp đồng chính thức (phạm vi, giá trị, điều kiện tạm ứng, bảo hành).
+5. **Bước 5 — Lập và phê duyệt kế hoạch triển khai**: Xây dựng tiến độ thi công chi tiết, mốc kiểm soát.
+6. **Bước 6 — Tổ chức thi công và giám sát**: Triển khai hiện trường, giám sát kỹ thuật, an toàn lao động, nhật ký thi công.
+7. **Bước 7 — Nghiệm thu công việc và giai đoạn**: Biên bản kiểm tra khối lượng, nghiệm thu kỹ thuật A4, ảnh minh chứng.
+8. **Bước 8 — Bàn giao đưa vào sử dụng**: Nghiệm thu hoàn thành, bàn giao hiện trạng, đào tạo vận hành.
+9. **Bước 9 — Quyết toán và bảo hành**: Hồ sơ quyết toán kinh phí, thanh lý hợp đồng, lưu trữ hồ sơ, quản lý bảo hành.
 
-## Tính năng chính
+---
 
-- Tổng quan điều hành: tiến độ dự án, việc quá hạn, việc chờ duyệt, sự cố hiện trường.
-- Quản lý dự án / gói thầu: tiến độ %, hạng mục công việc, mốc thanh toán, quy trình các bước.
-- Giao việc & theo dõi task theo trạng thái, kèm việc con (subtask) và hạn hoàn thành.
-- Báo cáo tiến độ có ảnh minh chứng, báo cáo sự cố, duyệt / trả báo cáo.
-- Phân quyền xem dự án cho lãnh đạo theo từng dự án.
-- Chỉ đạo và đánh giá của lãnh đạo ngay trên dự án.
-- Trao đổi (chat) theo dự án giữa các user và Admin, có thông báo tin nhắn chưa đọc.
-- Thông báo trong hệ thống, nhật ký hoạt động, báo cáo & xuất PDF, giao diện sáng / tối, dùng tốt trên điện thoại (thanh điều hướng dưới).
+## 3. Kiến trúc Công nghệ & Thư viện
 
-## Công nghệ
+- **Framework**: [Next.js 16](https://nextjs.org) (App Router, Turbopack, React Server Components & Client Components)
+- **UI & Runtime**: [React 19](https://react.dev), TypeScript (strict mode)
+- **Styling**: [Tailwind CSS 4](https://tailwindcss.com) + Hệ màu Aurora (Dark/Light mode mượt mà, hỗ trợ in ấn A4 chuẩn `print:`)
+- **Quản lý trạng thái (State Management)**:
+  - [Zustand](https://github.com/pmndrs/zustand) với middleware `persist` lưu cục bộ qua `localStorage`.
+  - Cơ chế **Seed Versioning** (`src/lib/seed.ts` - phiên bản `v3`): tự động cập nhật dữ liệu mẫu chuẩn nghiệp vụ khi cấu trúc thay đổi mà không làm mất trạng thái người dùng.
+- **Động cơ tính toán số liệu (Safe Selectors)**: `src/lib/selectors.ts` là nguồn chân lý duy nhất (Single Source of Truth) để tính:
+  - % tiến độ danh mục tổng hợp có tính trọng số theo giá trị hợp đồng (VNĐ).
+  - % tiến độ theo kế hoạch thời gian trôi qua.
+  - Phân loại cảnh báo đỏ (Red alerts) và mức độ rủi ro (low, medium, critical).
+- **Thư viện bổ trợ**:
+  - `lucide-react`: Hệ thống icon kỹ thuật
+  - `sonner`: Thông báo Toast tương tác
+  - `cmdk`: Command Palette tìm kiếm nhanh (`Ctrl + K`)
+  - `@supabase/supabase-js`: Chuẩn bị sẵn module kết nối database và auth đám mây (`src/lib/supabase.ts`)
 
-- **Next.js 16** (App Router) + **React 19**
-- **TypeScript**
-- **Tailwind CSS 4**
-- **Zustand** (quản lý state, persist xuống localStorage)
-- Lucide icons, Sonner (toast), Recharts (biểu đồ)
+---
 
-## Cách chạy
+## 4. Cấu trúc Thư mục Nguồn
 
-Cài dependencies:
+```text
+├── public/                       # Tài nguyên tĩnh
+├── src/
+│   ├── app/                      # Next.js App Router (16 routes)
+│   │   ├── layout.tsx            # Root layout bọc AppProvider & Sonner
+│   │   ├── page.tsx              # Dashboard điều hành (KPIs, biểu đồ tiến độ trọng số, chỉ đạo nhanh)
+│   │   ├── login/page.tsx        # Đăng nhập chọn vai trò & xác thực 2FA mô phỏng
+│   │   ├── projects/page.tsx     # Danh mục 16 gói thầu PXU, bộ lọc, hợp đồng, Kanban
+│   │   ├── projects/[id]/page.tsx# Chi tiết gói thầu (5 tab: Tổng quan, 9 bước, Tài chính, Sự cố, Minh chứng)
+│   │   ├── my-tasks/page.tsx     # Bàn làm việc kỹ sư (quá hạn, sắp đến hạn, chờ duyệt, đã duyệt)
+│   │   ├── tasks/new/page.tsx    # Giao việc mới & phân rã mục tiêu (Admin)
+│   │   ├── messages/page.tsx     # Kênh trao đổi nội bộ theo gói thầu và tin nhắn trực tiếp
+│   │   ├── reports/page.tsx      # Trung tâm báo cáo tiến độ, tài chính, sự cố
+│   │   ├── reports/print/page.tsx# Trang in A4 Báo cáo tổng hợp tiến độ & tài chính
+│   │   ├── reports/minutes/[taskId]/page.tsx # Biên bản nghiệm thu kỹ thuật A4 chuẩn in ấn
+│   │   ├── users/page.tsx        # Quản lý nhân sự và phân quyền dự án
+│   │   ├── audit-logs/page.tsx   # Nhật ký kiểm toán hoạt động hệ thống
+│   │   └── settings/page.tsx     # Cài đặt giao diện Sáng/Tối, reset dữ liệu, bảo mật 2FA
+│   │
+│   ├── components/
+│   │   ├── layout/               # AppShell, AppHeader, AppSidebar, BottomNav, CommandPalette
+│   │   ├── projects/             # TaskKanbanView, TaskListView, TaskTimelineView, WorkflowStepper,
+│   │   │                         # WorkBreakdownChecklist, ProjectContractsCard, ProjectGallery,
+│   │   │                         # ProjectChat, ProjectMembers
+│   │   ├── tasks/                # TaskDetailModal, TaskUpdateModal, TaskApprovalModal
+│   │   ├── providers/            # AppProvider (Theme, Auth gate, Khởi tạo dữ liệu)
+│   │   └── ui/                   # AuroraBackground, RingProgress, Sparkline, StatusBadge,
+│   │                             # SegmentedControl, Modal, cards, Switch, RowMenu, PageHeader
+│   │
+│   └── lib/
+│       ├── types.ts              # Định nghĩa TypeScript toàn bộ thực thể nghiệp vụ
+│       ├── utils.ts              # Hàm định dạng tiền VNĐ, ngày tháng VN, tính hạn quá hạn, ghép class cn()
+│       ├── selectors.ts          # Bộ chọn tính toán tiến độ trọng số và phân loại rủi ro
+│       ├── store.ts              # Zustand store điều phối toàn bộ hành động (CRUD, duyệt, sự cố)
+│       ├── seed.ts               # Bộ nạp dữ liệu chuẩn 16 gói thầu & di chuyển phiên bản
+│       ├── mock-data.ts          # Dữ liệu 16 gói thầu chi tiết kèm phân rã công việc & hợp đồng thực tế
+│       ├── mock-images.ts        # Bộ phát sinh ảnh minh chứng SVG và bìa gói thầu
+│       └── supabase.ts           # Cấu hình Supabase client
+└── supabase/
+    └── schema.sql                # SQL Schema đầy đủ cho cơ sở dữ liệu PostgreSQL
+```
 
+---
+
+## 5. Hướng dẫn Cài đặt & Vận hành
+
+### Yêu cầu môi trường
+- **Node.js**: Phiên bản 18 trở lên (khuyến nghị 20+)
+- **Trình quản lý gói**: `npm`, `yarn`, `pnpm` hoặc `bun`
+
+### Cài đặt dependencies
 ```bash
 npm install
 ```
 
-Chạy môi trường phát triển:
-
+### Chạy môi trường phát triển (Development)
 ```bash
 npm run dev
 ```
+Truy cập: `http://localhost:3000`
 
-Mở http://localhost:3000 — hệ thống sẽ đưa bạn tới trang đăng nhập, chọn một tài khoản demo để vào ngay (một số tài khoản có thêm bước OTP demo).
+### Kiểm tra mã nguồn (Lint & Type-check)
+```bash
+npm run lint
+npx tsc --noEmit
+```
 
-Build và chạy bản production:
-
+### Đóng gói sản xuất (Production Build)
 ```bash
 npm run build
 npm run start
 ```
 
-## Ghi chú quan trọng
+---
 
-- **Đây là bản demo**: toàn bộ dữ liệu là dữ liệu mẫu và được lưu bằng **localStorage** trên trình duyệt. Mỗi trình duyệt / thiết bị có một bộ dữ liệu riêng, không đồng bộ với nhau và không có máy chủ dữ liệu thật phía sau.
-- **Đăng nhập demo**: chọn tài khoản mẫu theo vai trò (Admin, Giám sát / Người thực hiện, Lãnh đạo); có thể chuyển vai trò demo ngay trong menu người dùng ở góc trên để xem hệ thống dưới góc nhìn của vai trò khác, và đăng xuất từ cùng menu đó.
-- **Lộ trình tiếp theo**: kết nối **Supabase** thật (cơ sở dữ liệu + đăng nhập thật + đồng bộ giữa các thiết bị) ở đợt nâng cấp sau. File `src/lib/supabase.ts` và thư mục `supabase/` (schema) hiện có chỉ là phần chuẩn bị, chưa được dùng trong luồng dữ liệu hiện tại.
+## 6. Nhật ký Tối ưu & Dọn dẹp Mã nguồn (Safe Refactoring)
 
-## Cấu trúc thư mục
-
-```text
-src/
-  app/            # Các route: trang chủ, projects, my-tasks, messages,
-                  # reports, users, audit-logs, settings, login, tasks
-  components/
-    layout/       # AppShell, AppSidebar, AppHeader, BottomNav, CommandPalette
-    providers/    # AppProvider (cổng đăng nhập, theme, toast)
-    projects/     # Component theo tính năng dự án
-    tasks/        # Component theo tính năng nhiệm vụ
-    ui/           # Component giao diện dùng chung
-  lib/
-    store.ts      # Zustand store: state toàn cục + persist localStorage
-    mock-data.ts  # Dữ liệu mẫu ban đầu
-    types.ts      # Kiểu dữ liệu dùng chung
-    utils.ts      # Hàm tiện ích
-    supabase.ts   # Chuẩn bị cho đợt nối Supabase thật (chưa dùng)
-supabase/
-  schema.sql      # Schema chuẩn bị cho đợt nối Supabase thật
-```
-
-<!-- Kích hoạt lại triển khai Vercel: 2026-11-06 -->
+Dự án đã được rà soát và tinh giản toàn diện theo nguyên tắc **Safe Refactoring**:
+- **Bảo toàn tuyệt đối**: Giữ nguyên 100% giao diện UI/UX, logic nghiệp vụ, dữ liệu, cấu trúc định tuyến và các phiên bản dependencies trong `package.json`.
+- **Tài nguyên thừa đã loại bỏ**:
+  - Xóa 5 file SVG boilerplate từ create-next-app trong `public/` không được dùng (`file.svg`, `globe.svg`, `next.svg`, `vercel.svg`, `window.svg`).
+  - Xóa component `CircularProgress.tsx` không còn sử dụng (đã được thay thế hoàn toàn bởi `RingProgress.tsx` theo ngôn ngữ thiết kế Aurora).
+- **Mã nguồn được tối ưu**:
+  - Dọn dẹp toàn bộ import thừa `React` ở các file `.tsx` phù hợp với chuẩn JSX Transform mới của React 19.
+  - Hợp nhất các câu lệnh import trùng lặp thư viện `lucide-react` trong `src/app/reports/page.tsx`.
+  - Tinh chỉnh tham số signature `_state` trong hàm `selectWeightedTimeProgress` tại `src/lib/selectors.ts` để loại bỏ cảnh báo biến không sử dụng.
+- **Kết quả kiểm thử**:
+  - `npm run lint`: **0 lỗi, 0 cảnh báo**.
+  - `npx tsc --noEmit`: **0 lỗi biên dịch TypeScript**.
+  - `npm run build`: **Biên dịch và prerender thành công 16/16 routes**.

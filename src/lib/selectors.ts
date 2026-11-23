@@ -164,7 +164,7 @@ export function selectOverallProgress(
  * đồ vùng), cũng trọng số theo giá trị hợp đồng để nhất quán với đường thực tế.
  */
 export function selectWeightedTimeProgress(
-  state: ProgressStateSlice,
+  _state: ProgressStateSlice,
   projects: Project[],
   at: Date
 ): number {

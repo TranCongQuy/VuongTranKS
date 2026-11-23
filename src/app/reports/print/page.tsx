@@ -8,7 +8,6 @@
  * Mọi con số tiến độ đều qua selector duy nhất (src/lib/selectors.ts).
  */
 
-import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Printer } from 'lucide-react';
 import { useConstructionStore } from '@/lib/store';

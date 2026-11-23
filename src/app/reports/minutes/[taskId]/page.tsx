@@ -9,7 +9,6 @@
  * KHÔNG bọc AppShell; dữ liệu đọc trực tiếp từ store.
  */
 
-import React from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Printer, ShieldAlert } from 'lucide-react';

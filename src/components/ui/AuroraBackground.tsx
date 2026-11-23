@@ -1,5 +1,3 @@
-import React from 'react';
-
 /**
  * AuroraBackground — 3 quầng sáng gradient cố định sau nội dung,
  * đúng vị trí/màu của Mẫu A: indigo góc phải trên, emerald dưới trái,

@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { AlertTriangle, Check, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { SectionCard, ProgressBar } from '@/components/ui/cards';

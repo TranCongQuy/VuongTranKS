@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { Task, TaskStatus, TASK_STATUS_CONFIG } from '@/lib/types';
 import { formatDateVN } from '@/lib/utils';
 import { SectionCard, EmptyState } from '@/components/ui/cards';

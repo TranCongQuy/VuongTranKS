@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { cn } from '@/lib/utils';
 
 /** Switch dùng chung cho cài đặt & phân quyền. */
